@@ -137,3 +137,14 @@ All notable changes to this project will be documented in this file. This projec
     - **P1**: Re-mapped to WASD + Space.
     - **P2**: Re-mapped to Arrow Keys + Enter.
   - **Physics**: Utilized existing `PLAYER_SPEED` constant for consistent movement velocity across all 4 axes.
+
+## [1.0.25] - 2026-04-18
+### Boss 'Wall Dash' Attack Pattern
+- **Objective**: Introduce a high-speed horizontal traversal attack to pressure player positioning.
+- **Detailed Technical Changes**:
+  - **Attack States**: Added `DASH_PREP` and `DASHING` states to the Boss AI.
+  - **Execution Logic**: 
+    - In `DASH_PREP`, the boss repositioned to `x = -width` or `x = canvas.width` and a random vertical coordinate between 100px and `canvas.height - 200px`.
+    - In `DASHING`, horizontal velocity is set to `15 * dashDir` (approx. 900px/sec).
+  - **Collision Engine**: Implemented an AABB check specifically during the `DASHING` state that flags any overlapping players as `alive = false`.
+  - **State Reset**: Added boundary checks (`this.x > canvas.width` or `this.x < -this.width`) to trigger a return to the `IDLE` central state.

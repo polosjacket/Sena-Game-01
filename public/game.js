@@ -535,12 +535,20 @@ class Boss {
 
             // Trigger attacks
             if (this.level >= 20 && this.attackTimer > 180) {
-                if (this.level >= 100 && Math.random() < 0.3) {
+                const rand = Math.random();
+                if (this.level >= 100 && rand < 0.2) {
                     this.attackState = 'LASER';
                     this.attackTimer = 0;
-                } else if (this.level >= 70 && Math.random() < 0.3) {
+                } else if (this.level >= 70 && rand < 0.3) {
                     this.attackState = 'SIDE';
                     this.sideDir = Math.random() < 0.5 ? -1 : 1;
+                    this.attackTimer = 0;
+                } else if (this.level >= 20 && rand < 0.6) {
+                    this.attackState = 'DASH_PREP';
+                    this.dashDir = Math.random() < 0.5 ? 1 : -1;
+                    // Move to start wall (off-screen)
+                    this.x = this.dashDir === 1 ? -this.width : canvas.width;
+                    this.y = 100 + Math.random() * (canvas.height - 300);
                     this.attackTimer = 0;
                 } else {
                     this.attackState = 'WARNING';
@@ -554,6 +562,29 @@ class Boss {
                     }
                     this.attackTimer = 0;
                 }
+            }
+        } else if (this.attackState === 'DASH_PREP') {
+            this.attackTimer++;
+            // 1 second warning
+            if (this.attackTimer > 60) {
+                this.attackState = 'DASHING';
+                this.attackTimer = 0;
+            }
+        } else if (this.attackState === 'DASHING') {
+            this.x += 15 * this.dashDir; // High speed dash
+            
+            // Collision with players
+            players.forEach(p => {
+                if (p.alive && p.invincible <= 0 && this.x < p.x + p.width && this.x + this.width > p.x && this.y < p.y + p.height && this.y + this.height > p.y) {
+                    p.alive = false;
+                    if (players.every(pl => !pl.alive)) endGame();
+                }
+            });
+
+            if ((this.dashDir === 1 && this.x > canvas.width) || (this.dashDir === -1 && this.x < -this.width)) {
+                this.attackState = 'IDLE';
+                this.x = (canvas.width - this.width) / 2;
+                this.y = 50;
             }
         } else if (this.attackState === 'WARNING') {
             this.slamTimer++;
