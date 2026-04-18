@@ -718,8 +718,8 @@ function gameLoop() {
     });
 
     // Update & Draw Heart
-    if (playerMode === 2 && players.some(p => !p.alive) && !heart && !heartSpawnedInRound) {
-        if (Math.random() < 0.005) { // Random spawn chance
+    if (players.some(p => !p.alive) && !heart && !heartSpawnedInRound) {
+        if (Math.random() < 0.01) { // Increased spawn chance
             heart = new Heart(Math.random() * (canvas.width - 30), canvas.height - 60);
         }
     }
@@ -917,6 +917,8 @@ function initUIListeners() {
         document.getElementById('setup-screen').classList.add('active');
         loadScores();
     });
+
+    safeAddListener('continue-btn', 'click', continueGame);
 
     document.querySelectorAll('.diff-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
