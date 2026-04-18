@@ -280,7 +280,9 @@ class Player {
         this.upgrades = {
             rapid: 1, // Max 9
             explosion: 0.1, // Max 0.5
-            laser: 0.1 // Max 0.5
+            laser: 0.1, // Chance (Max 0.5)
+            laserLvl: 1, // Damage level (Max 10)
+            freeze: 0 // Chance (Max 0.5)
         };
     }
 
@@ -402,10 +404,12 @@ class Invader {
         this.height = INVADER_SIZE;
         this.speed = speed;
         this.alive = true;
+        this.frozen = 0; // Frames
     }
 
     draw() {
-        ctx.fillStyle = '#cdb4db';
+        if (this.frozen > 0) ctx.fillStyle = '#caf0f8';
+        else ctx.fillStyle = '#cdb4db';
         // Simple 8-bit invader shape
         ctx.fillRect(this.x + 5, this.y + 5, this.width - 10, this.height - 10);
         ctx.fillRect(this.x + 10, this.y + 2, 10, 5); // top
@@ -414,27 +418,56 @@ class Invader {
     }
 
     update(direction) {
+        if (this.frozen > 0) {
+            this.frozen--;
+            return;
+        }
         this.x += this.speed * direction;
     }
 }
 
 class Boss {
-    constructor(hp) {
+    constructor(hp, level) {
         this.width = 100;
         this.height = 100;
         this.x = (canvas.width - this.width) / 2;
         this.y = 50;
         this.maxHp = hp;
         this.hp = hp;
-        this.speed = 3;
+        this.speed = 2;
         this.direction = 1;
         this.color = '#ff0054';
+        this.level = level;
+        this.attackTimer = 0;
+        this.attackState = 'IDLE'; // IDLE, WARNING, SLAM, SIDE, LASER
+        this.warningAreas = [];
+        this.slamTimer = 0;
+        this.sideDir = 0;
+        this.laserX = -100;
     }
 
     draw() {
+        // Draw Warning Areas
+        this.warningAreas.forEach(area => {
+            ctx.fillStyle = 'rgba(255, 0, 0, 0.3)';
+            ctx.fillRect(area.x, 0, area.w, canvas.height);
+        });
+
+        if (this.attackState === 'LASER') {
+            ctx.fillStyle = 'rgba(255, 0, 255, 0.8)';
+            ctx.fillRect(this.x + this.width/2 - 20, this.y + this.height, 40, canvas.height);
+        }
+
         ctx.fillStyle = this.color;
         // 8-bit Boss Face
         ctx.fillRect(this.x, this.y, this.width, this.height);
+        
+        // Draw Hands if level >= 50
+        if (this.level >= 50) {
+            ctx.fillRect(this.x - 40, this.y + 20, 30, 30);
+            ctx.fillRect(this.x + this.width + 10, this.y + 20, 30, 30);
+        }
+
         // Eyes
         ctx.fillStyle = '#ffffff';
         ctx.fillRect(this.x + 20, this.y + 20, 20, 20);
@@ -444,23 +477,99 @@ class Boss {
         ctx.fillRect(this.x + 65, this.y + 25, 10, 10);
         
         // Health Bar
-        const barWidth = 200;
-        const barHeight = 10;
+        const barWidth = 300;
+        const barHeight = 15;
         const barX = (canvas.width - barWidth) / 2;
-        const barY = 20;
+        const barY = 15;
         ctx.fillStyle = '#333';
         ctx.fillRect(barX, barY, barWidth, barHeight);
         ctx.fillStyle = '#ff0054';
         ctx.fillRect(barX, barY, (this.hp / this.maxHp) * barWidth, barHeight);
         ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 2;
         ctx.strokeRect(barX, barY, barWidth, barHeight);
+        ctx.lineWidth = 1;
     }
 
     update() {
-        this.x += this.speed * this.direction;
-        if (this.x + this.width > canvas.width || this.x < 0) {
-            this.direction *= -1;
-            this.y += 10;
+        if (this.attackState === 'IDLE') {
+            this.x += this.speed * this.direction;
+            if (this.x + this.width > canvas.width || this.x < 0) {
+                this.direction *= -1;
+                this.y += 5;
+            }
+            this.attackTimer++;
+
+            // Trigger attacks
+            if (this.level >= 50 && this.attackTimer > 180) {
+                if (this.level >= 100 && Math.random() < 0.3) {
+                    this.attackState = 'LASER';
+                    this.attackTimer = 0;
+                } else if (this.level >= 70 && Math.random() < 0.3) {
+                    this.attackState = 'SIDE';
+                    this.sideDir = Math.random() < 0.5 ? -1 : 1;
+                    this.attackTimer = 0;
+                } else {
+                    this.attackState = 'WARNING';
+                    const numSlams = this.level >= 60 ? 2 : 1;
+                    this.warningAreas = [];
+                    for(let i=0; i<numSlams; i++) {
+                        this.warningAreas.push({ x: Math.random() * (canvas.width - 100), w: 100 });
+                    }
+                    this.attackTimer = 0;
+                }
+            }
+        } else if (this.attackState === 'WARNING') {
+            this.slamTimer++;
+            if (this.slamTimer > 60) {
+                this.attackState = 'SLAM';
+                this.slamTimer = 0;
+                sfx.playExplosion();
+            }
+        } else if (this.attackState === 'SLAM') {
+            this.slamTimer++;
+            // Check collision with players in warning areas
+            this.warningAreas.forEach(area => {
+                players.forEach(p => {
+                    if (p.alive && p.invincible <= 0 && p.x < area.x + area.w && p.x + p.width > area.x) {
+                        p.alive = false;
+                        if (players.every(pl => !pl.alive)) endGame();
+                    }
+                });
+            });
+            if (this.slamTimer > 20) {
+                this.attackState = 'IDLE';
+                this.warningAreas = [];
+                this.slamTimer = 0;
+            }
+        } else if (this.attackState === 'SIDE') {
+            this.x += this.speed * 4 * this.sideDir;
+            if (this.x < -100 || this.x > canvas.width) {
+                this.attackState = 'IDLE';
+                this.x = (canvas.width - this.width) / 2;
+                this.y = 50;
+            }
+            // Dangerous area: entire screen except one gap
+            const safeX = canvas.width / 2 - 100;
+            const safeW = 200;
+            players.forEach(p => {
+                if (p.alive && p.invincible <= 0 && (p.x < safeX || p.x + p.width > safeX + safeW)) {
+                    p.alive = false;
+                    if (players.every(pl => !pl.alive)) endGame();
+                }
+            });
+        } else if (this.attackState === 'LASER') {
+            this.slamTimer++;
+            players.forEach(p => {
+                if (p.alive && p.invincible <= 0 && p.x < this.x + this.width/2 + 20 && p.x + p.width > this.x + this.width/2 - 20) {
+                    p.alive = false;
+                    if (players.every(pl => !pl.alive)) endGame();
+                }
+            });
+            if (this.slamTimer > 60) {
+                this.attackState = 'IDLE';
+                this.slamTimer = 0;
+            }
         }
 
         if (Math.random() < 0.05) {
@@ -524,7 +633,8 @@ function initInvaders() {
     boss = null;
 
     if (level % 10 === 0) {
-        boss = new Boss(Math.min(1000, (level / 10) * 100));
+        const bossHp = 100 + (level / 10 - 1) * 50;
+        boss = new Boss(bossHp, level);
         return;
     }
 
@@ -675,7 +785,8 @@ function gameLoop() {
         if (boss) {
             if (b.x < boss.x + boss.width && b.x + b.width > boss.x && b.y < boss.y + boss.height && b.y + b.height > boss.y) {
                 if (b.type === 'normal') playerBullets.splice(bIdx, 1);
-                boss.hp -= (b.type === 'laser' ? 15 : 10);
+                const laserDmg = 15 + (player.upgrades.laserLvl - 1) * 2;
+                boss.hp -= (b.type === 'laser' ? laserDmg : 10);
                 sfx.playHitSFX();
                 if (boss.hp <= 0) {
                     player.score += 1000;
@@ -712,6 +823,13 @@ function gameLoop() {
                 invaders.splice(i, 1);
                 player.score += 100;
                 sfx.playHitSFX();
+                
+                // Freeze check
+                if (Math.random() < player.upgrades.freeze) {
+                    invaders.forEach(inv => {
+                        if (Math.abs(inv.x - b.x) < 50) inv.frozen = 120; // 2 seconds
+                    });
+                }
                 
                 // If it's not a laser, we've already spliced the bullet, so break the invader loop
                 if (b.type === 'normal') break;
@@ -804,6 +922,14 @@ function showUpgradeScreen() {
     gameState = 'UPGRADING';
     sfx.playWinJingle();
     currentUpgradingPlayer = 0;
+    
+    // Show freeze card if level was a boss level
+    if (level % 10 === 0) {
+        document.getElementById('freeze-card').classList.remove('hidden');
+    } else {
+        document.getElementById('freeze-card').classList.add('hidden');
+    }
+    
     updateUpgradeOverlay();
     document.getElementById('upgrade-overlay').classList.add('active');
 }
@@ -816,7 +942,8 @@ function updateUpgradeOverlay() {
     const cards = document.querySelectorAll('.card');
     cards[0].querySelector('.level-info').textContent = `LVL ${player.upgrades.rapid}/9`;
     cards[1].querySelector('.level-info').textContent = `${Math.round(player.upgrades.explosion * 100)}% CHANCE`;
-    cards[2].querySelector('.level-info').textContent = `${Math.round(player.upgrades.laser * 100)}% CHANCE`;
+    cards[2].querySelector('.level-info').textContent = `LVL ${player.upgrades.laserLvl}/10 (${Math.round(player.upgrades.laser * 100)}% CHANCE)`;
+    cards[3].querySelector('.level-info').textContent = `${Math.round(player.upgrades.freeze * 100)}% CHANCE`;
 }
 
 function selectUpgrade(type) {
@@ -826,8 +953,11 @@ function selectUpgrade(type) {
         player.upgrades.rapid++;
     } else if (type === 'explosion' && player.upgrades.explosion < 0.5) {
         player.upgrades.explosion += 0.1;
-    } else if (type === 'laser' && player.upgrades.laser < 0.5) {
-        player.upgrades.laser += 0.1;
+    } else if (type === 'laser' && player.upgrades.laserLvl < 10) {
+        player.upgrades.laserLvl++;
+        if (player.upgrades.laser < 0.5) player.upgrades.laser += 0.1;
+    } else if (type === 'freeze' && player.upgrades.freeze < 0.5) {
+        player.upgrades.freeze += 0.1;
     }
 
     if (playerMode === 2 && currentUpgradingPlayer === 0) {

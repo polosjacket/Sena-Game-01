@@ -146,7 +146,7 @@ button {
     gap: 15px;
 }
 
-.input-group.hidden {
+.input-group.hidden, .card.hidden {
     display: none;
 }
 

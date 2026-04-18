@@ -58,3 +58,11 @@ All notable changes and instructions implemented in this session:
 ### [1.0.14] - Continue Mission & Heart Logic Update
 - Added 'CONTINUE MISSION' feature to resume gameplay after death without resetting level/score.
 - Updated Heart spawn logic to appear whenever any player is dead, with an increased spawn frequency (1% per frame).
+
+### [1.0.15] - Laser Damage Scaling
+- Implemented scaling laser damage: Level 1 starts at 15 damage, increasing by +2 per level up to Level 10 (33 total damage).
+
+### [1.0.16] - Boss Overhaul & Freeze Card
+- Implemented advanced Boss mechanics: Hand Slams (Lvl 50+), Side Sweeps (Lvl 70+), and Center Lasers (Lvl 100+).
+- New Boss Health Scaling: 100 HP base, +50 HP per boss level.
+- New 'FREEZE' Card: Exclusive post-boss reward that can freeze enemies in place.
