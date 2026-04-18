@@ -1,8 +1,22 @@
-# Comprehensive Changelog: 8-Bit Space Invaders Duo
+# Comprehensive Changelog: Zap the Thing!
 
 All notable changes to this project will be documented in this file. This project adheres to Semantic Versioning.
 
 ---
+
+## [1.0.29] - 2026-04-18
+### Project Rebranding & Deployment Readiness
+- **Objective**: Rebrand the project to "Zap the Thing!" and prepare for production deployment on Render.com.
+- **Detailed Technical Changes**:
+  - **Rebranding**: 
+    - Updated `index.html` `<title>` and `<h1>` to "Zap the Thing!".
+    - Updated `package.json` name to `zap-the-thing`.
+    - Overhauled `README.md` and `CHANGELOG.md` titles.
+  - **Deployment**:
+    - Added `"start": "node server.js"` to `package.json` scripts.
+    - Verified `server.js` dynamic port binding (`process.env.PORT || 3000`).
+    - Documented live URL in `README.md`.
+  - **Hero Documentation**: Updated README with character-specific controls for Kirby, Mario, Luigi, and Meta Knight.
 
 ## [1.0.28] - 2026-04-18
 ### Character Role Correction (P1 Kirby)

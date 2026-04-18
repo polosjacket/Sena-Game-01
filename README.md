@@ -1,16 +1,18 @@
-# 8-Bit Space Invaders Duo: Revenge
+# Zap the Thing!
 
-A polished, 2-player cooperative 8-bit Space Invaders clone built with modern web technologies. Face off against waves of invaders, battle massive bosses, and upgrade your ship to become the ultimate pilot!
+A polished, 4-player cooperative 8-bit arcade shooter. Zap the things, battle massive bosses, and upgrade your heroes to become legendary!
 
-![Space Invaders Duo](https://via.placeholder.com/800x400.png?text=8-Bit+Space+Invaders+Duo)
+**Live Demo**: [https://zap-the-thing.onrender.com/](https://zap-the-thing.onrender.com/)
+
+![Zap the Thing!](https://via.placeholder.com/800x400.png?text=Zap+the+Thing!)
 
 ## 🚀 Features
 
-- **Cooperative Multiplayer**: Play solo or with a friend in local co-op mode.
+- **4-Player Cooperative Multiplayer**: Play solo or with up to 3 friends (Mario, Kirby, Luigi, Meta Knight) in local co-op mode.
 - **Procedural Sound Engine**: All audio (BGM and SFX) is generated procedurally using the Web Audio API—no external assets required!
-- **Upgrade System**: Choose between **Rapid Fire**, **Explosive Rounds**, and **Laser Beams** after every round to customize your ship.
+- **Upgrade System**: Choose between **Rapid Fire**, **Explosive Rounds**, and **Laser Beams** after every round to customize your hero.
 - **Epic Boss Fights**: Face a massive boss every 10 levels with scaling health and unique attack patterns.
-- **Cooperative Respawn**: Collect hearts to revive your fallen teammate with invincibility.
+- **Cooperative Respawn**: Collect hearts to revive your fallen teammates with invincibility.
 - **Continue System**: Never lose your progress! Continue your mission from the current level after a Game Over.
 - **High Score Tracking**: Persistent Top 3 leaderboard powered by SQLite.
 
@@ -25,7 +27,7 @@ A polished, 2-player cooperative 8-bit Space Invaders clone built with modern we
 
 1. **Clone the repository**:
    ```bash
-   git clone https://github.com/your-username/Sena-Game-01.git
+   git clone https://github.com/polosjacket/Sena-Game-01.git
    cd Sena-Game-01
    ```
 
@@ -45,12 +47,20 @@ A polished, 2-player cooperative 8-bit Space Invaders clone built with modern we
 ## 🎮 Controls
 
 ### Player 1 (Kirby)
-- **Move**: `A` / `D`
+- **Move**: `W/A/S/D`
 - **Shoot**: `SPACE`
 
 ### Player 2 (Mario)
-- **Move**: `Left` / `Right Arrows`
+- **Move**: `Arrows`
 - **Shoot**: `ENTER`
+
+### Player 3 (Luigi)
+- **Move**: `I/J/K/L`
+- **Shoot**: `U`
+
+### Player 4 (Meta Knight)
+- **Move**: `T/F/G/H`
+- **Shoot**: `R`
 
 ### Global
 - **Pause**: `P`
