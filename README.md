@@ -47,20 +47,21 @@ A polished, 4-player cooperative 8-bit arcade shooter. Zap the things, battle ma
 ## 🎮 Controls
 
 ### Player 1 (Kirby)
-- **Move**: `W/A/S/D`
-- **Shoot**: `SPACE`
+- **Move**: `A/D` (Horizontal Only)
+- **Shoot**: `W`
 
 ### Player 2 (Mario)
-- **Move**: `Arrows`
-- **Shoot**: `ENTER`
+- **Move**: `Left/Right Arrows` (Horizontal Only)
+- **Shoot**: `Up Arrow`
 
 ### Player 3 (Luigi)
-- **Move**: `I/J/K/L`
-- **Shoot**: `U`
+- **Move**: `J/L` (Horizontal Only)
+- **Shoot**: `I`
 
 ### Player 4 (Meta Knight)
-- **Move**: `T/F/G/H`
-- **Shoot**: `R`
+- **Move**: `F/H` (Horizontal Only)
+- **Shoot**: `T`
+
 
 ### Global
 - **Pause**: `P`

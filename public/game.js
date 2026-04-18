@@ -383,8 +383,7 @@ class Player {
 
         if (keys[this.keys.left] && this.x > 0) this.x -= PLAYER_SPEED;
         if (keys[this.keys.right] && this.x < canvas.width - this.width) this.x += PLAYER_SPEED;
-        if (keys[this.keys.up] && this.y > 0) this.y -= PLAYER_SPEED;
-        if (keys[this.keys.down] && this.y < canvas.height - this.height) this.y += PLAYER_SPEED;
+
 
         if (keys[this.keys.shoot] && this.cooldown <= 0) {
             const isLaser = Math.random() < this.upgrades.laser;
@@ -777,24 +776,25 @@ function startGame() {
 
     players = [];
     players.push(new Player(1, p1Name, canvas.width * 0.2, canvas.height - 40, '#bde0fe', { 
-        left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', shoot: 'Space' 
+        left: 'KeyA', right: 'KeyD', shoot: 'KeyW' 
     }));
     
     if (playerMode >= 2) {
         players.push(new Player(2, p2Name, canvas.width * 0.4, canvas.height - 40, '#ffafcc', { 
-            left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown', shoot: 'Enter' 
+            left: 'ArrowLeft', right: 'ArrowRight', shoot: 'ArrowUp' 
         }));
     }
     if (playerMode >= 4) {
         const p3Name = document.getElementById('player3-name').value || 'LUIGI';
         const p4Name = document.getElementById('player4-name').value || 'META';
         players.push(new Player(3, p3Name, canvas.width * 0.6, canvas.height - 40, '#81c784', { 
-            left: 'KeyJ', right: 'KeyL', up: 'KeyI', down: 'KeyK', shoot: 'KeyU' 
+            left: 'KeyJ', right: 'KeyL', shoot: 'KeyI' 
         }));
         players.push(new Player(4, p4Name, canvas.width * 0.8, canvas.height - 40, '#7986cb', { 
-            left: 'KeyF', right: 'KeyH', up: 'KeyT', down: 'KeyG', shoot: 'KeyR' 
+            left: 'KeyF', right: 'KeyH', shoot: 'KeyT' 
         }));
     }
+
 
     playerBullets = [];
     invaderBullets = [];

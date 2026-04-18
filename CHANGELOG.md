@@ -4,6 +4,46 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.31] - 2026-04-19
+### Control Simplification & Horizontal Movement
+- **Objective**: Streamline gameplay by restricting movement to the horizontal axis and re-mapping the shoot action to the "Up" keys.
+- **Detailed Technical Changes**:
+  - **Movement Engine**:
+    - Removed vertical movement logic (`up`/`down`) in `Player.update()`.
+    - Clamped player position strictly to the bottom row for classic arcade feel.
+  - **Key Re-mapping**:
+    - P1: `A/D` to Move, `W` to Shoot.
+    - P2: `Left/Right` to Move, `Up` to Shoot.
+    - P3: `J/L` to Move, `I` to Shoot.
+    - P4: `F/H` to Move, `T` to Shoot.
+  - **UI/UX**:
+    - Updated the on-screen controls hint to reflect the new mappings.
+  - **Documentation**:
+    - Updated `README.md` with the new control scheme for all 4 players.
+
+---
+
+
+## [1.0.30] - 2026-04-19
+### Automated Testing Suite & Backend Refactoring
+- **Objective**: Implement a comprehensive testing framework for both backend API and frontend E2E scenarios to ensure stability.
+- **Detailed Technical Changes**:
+  - **Backend Testability**:
+    - Refactored `server.js` to export the `app` object and support dynamic database paths via `process.env.DB_PATH`.
+    - Implemented a test-specific SQLite database instance to prevent data corruption during CI/CD or local testing.
+  - **API Integration Tests**:
+    - Created `tests/server.test.js` using Jest and Supertest.
+    - Verified `GET /api/scores` and `POST /api/scores` logic, including ordering and input validation.
+  - **E2E Gameplay Tests**:
+    - Integrated Playwright for browser-based automation.
+    - Created `tests/game.spec.js` to verify mission launch, difficulty selection, and canvas rendering.
+  - **CI/CD Readiness**:
+    - Added `npm test` and `npm run test:e2e` scripts to `package.json`.
+    - Configured Jest and Playwright to ignore each other's test files using pattern matching.
+
+---
+
+
 ## [1.0.29] - 2026-04-18
 ### Project Rebranding & Deployment Readiness
 - **Objective**: Rebrand the project to "Zap the Thing!" and prepare for production deployment on Render.com.
