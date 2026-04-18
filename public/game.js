@@ -479,10 +479,23 @@ class Boss {
         // 8-bit Boss Face
         ctx.fillRect(this.x, this.y, this.width, this.height);
         
-        // Draw Hands if level >= 50
-        if (this.level >= 50) {
-            ctx.fillRect(this.x - 40, this.y + 20, 30, 30);
-            ctx.fillRect(this.x + this.width + 10, this.y + 20, 30, 30);
+        // Draw Hands/Fingers if level >= 20
+        if (this.level >= 20) {
+            ctx.fillStyle = this.color;
+            if (this.level >= 40) {
+                // 4 Fingers
+                ctx.fillRect(this.x - 50, this.y + 20, 15, 40);
+                ctx.fillRect(this.x - 30, this.y + 20, 15, 40);
+                ctx.fillRect(this.x + this.width + 15, this.y + 20, 15, 40);
+                ctx.fillRect(this.x + this.width + 35, this.y + 20, 15, 40);
+            } else if (this.level >= 30) {
+                // 2 Fingers
+                ctx.fillRect(this.x - 40, this.y + 20, 25, 40);
+                ctx.fillRect(this.x + this.width + 15, this.y + 20, 25, 40);
+            } else {
+                // 1 Finger
+                ctx.fillRect(this.x + this.width / 2 - 15, this.y - 50, 30, 40);
+            }
         }
 
         // Eyes
@@ -518,7 +531,7 @@ class Boss {
             this.attackTimer++;
 
             // Trigger attacks
-            if (this.level >= 50 && this.attackTimer > 180) {
+            if (this.level >= 20 && this.attackTimer > 180) {
                 if (this.level >= 100 && Math.random() < 0.3) {
                     this.attackState = 'LASER';
                     this.attackTimer = 0;
@@ -528,10 +541,13 @@ class Boss {
                     this.attackTimer = 0;
                 } else {
                     this.attackState = 'WARNING';
-                    const numSlams = this.level >= 60 ? 2 : 1;
+                    let numSlams = 1;
+                    if (this.level >= 40) numSlams = 4;
+                    else if (this.level >= 30) numSlams = 2;
+                    
                     this.warningAreas = [];
                     for(let i=0; i<numSlams; i++) {
-                        this.warningAreas.push({ x: Math.random() * (canvas.width - 100), w: 100 });
+                        this.warningAreas.push({ x: Math.random() * (canvas.width - 80), w: 80 });
                     }
                     this.attackTimer = 0;
                 }
@@ -1095,6 +1111,8 @@ function initUIListeners() {
     // Mission Start
     safeAddListener('start-btn', 'click', startGame);
     safeAddListener('pause-btn', 'click', togglePause);
+    safeAddListener('quit-btn', 'click', quitToMenu);
+    
     // Continue/Retry actions
     safeAddListener('continue-btn', 'click', continueGame);
     safeAddListener('restart-btn', 'click', () => {
@@ -1102,8 +1120,6 @@ function initUIListeners() {
         document.getElementById('setup-screen').classList.add('active');
         loadScores();
     });
-
-    safeAddListener('continue-btn', 'click', continueGame);
 
     document.querySelectorAll('.diff-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
