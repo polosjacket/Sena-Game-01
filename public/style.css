@@ -134,6 +134,12 @@ input::placeholder {
     box-shadow: 0 0 10px rgba(162, 210, 255, 0.4);
 }
 
+button {
+    position: relative;
+    z-index: 100 !important;
+    cursor: pointer;
+}
+
 #player-inputs {
     display: flex;
     flex-direction: column;

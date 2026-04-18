@@ -40,5 +40,17 @@ All notable changes and instructions implemented in this session:
 - Boss health starts at **100 HP** and increases by 100 HP every 10 levels (max 1000 HP).
 - Added a Boss Health Bar and unique movement/attack patterns.
 
-### [1.0.9] - Combat Tuning
-- Increased **Laser Damage** to 15 per hit against boss targets.
+### [1.0.10] - UI Robustness & Safety
+- Implemented `DOMContentLoaded` wrapper to ensure DOM elements are ready before attaching listeners.
+- Added `safeAddListener` pattern to prevent script crashes if specific UI elements are missing.
+- Centralized UI initialization and improved z-index layering for all interactive buttons.
+- Added global error reporting and audio initialization safety blocks.
+
+### [1.0.11] - Critical Syntax Bug Fix
+- Fixed an 'Illegal break statement' Syntax Error in `game.js` that was completely preventing the game script from running and causing all buttons to be unclickable.
+
+### [1.0.12] - Heart Placement Refinement
+- Adjusted the Heart spawn Y coordinate from 80 to 60 pixels from the bottom to ensure collision with players is possible.
+
+### [1.0.13] - Overlay Reset Fix
+- Fixed a bug where the Upgrade and Pause overlays could persist into a new mission. Explicitly hiding all overlays upon calling `startGame`.

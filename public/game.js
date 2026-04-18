@@ -11,7 +11,11 @@ class SoundEffects {
 
     init() {
         if (this.ctx) return;
-        this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        try {
+            this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        } catch (e) {
+            console.error('AudioContext not supported', e);
+        }
     }
 
     playShootPlayer() {
@@ -553,6 +557,8 @@ function startGame() {
     document.getElementById('setup-screen').classList.remove('active');
     document.getElementById('game-over-screen').classList.remove('active');
     document.getElementById('game-screen').classList.add('active');
+    document.getElementById('upgrade-overlay').classList.remove('active');
+    document.getElementById('pause-overlay').classList.remove('active');
 
     sfx.init();
     sfx.playBGM();
@@ -652,7 +658,7 @@ function gameLoop() {
                     player.score += 1000;
                     boss = null;
                 }
-                if (b.type === 'normal') break;
+                if (b.type === 'normal') return;
             }
         }
 
@@ -714,7 +720,7 @@ function gameLoop() {
     // Update & Draw Heart
     if (playerMode === 2 && players.some(p => !p.alive) && !heart && !heartSpawnedInRound) {
         if (Math.random() < 0.005) { // Random spawn chance
-            heart = new Heart(Math.random() * (canvas.width - 30), canvas.height - 80);
+            heart = new Heart(Math.random() * (canvas.width - 30), canvas.height - 60);
         }
     }
 
@@ -892,66 +898,78 @@ function quitToMenu() {
     loadScores();
 }
 
-// UI Event Listeners
-document.getElementById('start-btn').addEventListener('click', startGame);
-document.getElementById('pause-btn').addEventListener('click', togglePause);
-document.getElementById('quit-btn').addEventListener('click', quitToMenu);
-document.getElementById('pause-overlay').addEventListener('click', togglePause);
-
-document.querySelectorAll('.card').forEach(card => {
-    card.addEventListener('click', () => {
-        if (gameState === 'UPGRADING') {
-            selectUpgrade(card.dataset.upgrade);
-        }
-    });
-});
-
-window.addEventListener('keydown', e => {
-    if (e.code === 'KeyP') togglePause();
-});
-document.getElementById('restart-btn').addEventListener('click', () => {
-    document.getElementById('game-over-screen').classList.remove('active');
-    document.getElementById('setup-screen').classList.add('active');
-    loadScores();
-});
-
-document.querySelectorAll('.diff-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        difficulty = btn.dataset.difficulty;
-    });
-});
-
-document.querySelectorAll('.mode-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-        document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-        playerMode = parseInt(btn.dataset.players);
-        
-        // Toggle P2 input visibility
-        if (playerMode === 1) {
-            document.getElementById('p2-input').classList.add('hidden');
-        } else {
-            document.getElementById('p2-input').classList.remove('hidden');
-        }
-    });
-});
-
-function initPlayerMode() {
-    if (playerMode === 1) {
-        document.getElementById('p2-input').classList.add('hidden');
+// Safe Listener Attachment
+function safeAddListener(id, event, callback) {
+    const el = document.getElementById(id);
+    if (el) {
+        el.addEventListener(event, callback);
     } else {
-        document.getElementById('p2-input').classList.remove('hidden');
+        console.warn(`Could not find element with id: ${id}`);
     }
 }
 
-// Initial load
-loadScores();
-initPlayerMode();
+function initUIListeners() {
+    safeAddListener('start-btn', 'click', startGame);
+    safeAddListener('pause-btn', 'click', togglePause);
+    safeAddListener('quit-btn', 'click', quitToMenu);
+    safeAddListener('restart-btn', 'click', () => {
+        document.getElementById('game-over-screen').classList.remove('active');
+        document.getElementById('setup-screen').classList.add('active');
+        loadScores();
+    });
+
+    document.querySelectorAll('.diff-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            difficulty = btn.dataset.difficulty;
+        });
+    });
+
+    document.querySelectorAll('.mode-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            playerMode = parseInt(btn.dataset.players);
+            initPlayerMode();
+        });
+    });
+
+    document.querySelectorAll('.card').forEach(card => {
+        card.addEventListener('click', () => {
+            if (gameState === 'UPGRADING') selectUpgrade(card.dataset.upgrade);
+        });
+    });
+
+    window.addEventListener('keydown', e => {
+        if (e.code === 'KeyP') togglePause();
+    });
+}
+
+function initPlayerMode() {
+    const p2Input = document.getElementById('p2-input');
+    if (p2Input) {
+        if (playerMode === 1) {
+            p2Input.classList.add('hidden');
+        } else {
+            p2Input.classList.remove('hidden');
+        }
+    }
+}
+
+// Initial Load
+document.addEventListener('DOMContentLoaded', () => {
+    initUIListeners();
+    initPlayerMode();
+    loadScores();
+});
 
 // Intro Sound & Audio Init
-window.addEventListener('click', () => {
-    sfx.init();
-    if (gameState === 'SETUP') sfx.playIntroBGM();
+window.addEventListener('mousedown', () => {
+    try {
+        sfx.init();
+        if (gameState === 'SETUP') sfx.playIntroBGM();
+    } catch (e) {}
 }, { once: true });
