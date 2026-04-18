@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.32] - 2026-04-19
+### Configuration Alignment & Git Hygiene
+- **Objective**: Optimize the project's version control configuration to exclude temporary and environment-specific files.
+- **Detailed Technical Changes**:
+  - **Git Configuration**:
+    - Overhauled `.gitignore` to include patterns for Node.js logs, Playwright reports (`playwright-report/`), and test artifacts (`test-results/`).
+    - Explicitly ignored all SQLite database files (`*.db`) to prevent accidental commits of local highscore data, while leaving room for future template inclusion.
+    - Added standard ignores for macOS (`.DS_Store`) and common IDEs (`.vscode/`, `.idea/`).
+    - Secured the project by adding environment file patterns (`.env`, `.env.test`).
+
+---
+
+
 ## [1.0.31] - 2026-04-19
 ### Control Simplification & Horizontal Movement
 - **Objective**: Streamline gameplay by restricting movement to the horizontal axis and re-mapping the shoot action to the "Up" keys.
