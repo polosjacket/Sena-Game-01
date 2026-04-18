@@ -126,3 +126,14 @@ All notable changes to this project will be documented in this file. This projec
   - **UI Interaction**: Added `pointer-events: all !important` to the `.card` CSS class to override any potential transparency or overlay blocks from the CRT filter.
   - **Robustness**: Wrapped `sfx.stopWinTheme()` in a try/catch block to ensure that audio state issues do not block the execution of the upgrade logic.
   - **Diagnostics**: Added `console.log` telemetry to track card clicks and active player indices during the upgrade phase.
+
+## [1.0.24] - 2026-04-18
+### 4-Way Pilot Movement
+- **Objective**: Enhance player mobility by allowing vertical movement in addition to horizontal strafing.
+- **Detailed Technical Changes**:
+  - **Class Update**: Modified `Player.update()` to include checks for `this.keys.up` and `this.keys.down`.
+  - **Boundary Clamping**: Implemented vertical clamping (`this.y > 0` and `this.y < canvas.height - this.height`) to prevent players from leaving the play area.
+  - **Control Mapping**: 
+    - **P1**: Re-mapped to WASD + Space.
+    - **P2**: Re-mapped to Arrow Keys + Enter.
+  - **Physics**: Utilized existing `PLAYER_SPEED` constant for consistent movement velocity across all 4 axes.

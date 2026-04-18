@@ -360,6 +360,8 @@ class Player {
 
         if (keys[this.keys.left] && this.x > 0) this.x -= PLAYER_SPEED;
         if (keys[this.keys.right] && this.x < canvas.width - this.width) this.x += PLAYER_SPEED;
+        if (keys[this.keys.up] && this.y > 0) this.y -= PLAYER_SPEED;
+        if (keys[this.keys.down] && this.y < canvas.height - this.height) this.y += PLAYER_SPEED;
 
         if (keys[this.keys.shoot] && this.cooldown <= 0) {
             const isLaser = Math.random() < this.upgrades.laser;
@@ -688,10 +690,22 @@ function startGame() {
     const p2Name = document.getElementById('player2-name').value || 'PILOT 2';
 
     players = [];
-    players.push(new Player(1, p1Name, canvas.width / 4, canvas.height - 40, '#bde0fe', { left: 'KeyA', right: 'KeyD', shoot: 'Space' }));
+    players.push(new Player(1, p1Name, canvas.width / 4, canvas.height - 40, '#bde0fe', { 
+        left: 'KeyA', 
+        right: 'KeyD', 
+        up: 'KeyW', 
+        down: 'KeyS', 
+        shoot: 'Space' 
+    }));
     
     if (playerMode === 2) {
-        players.push(new Player(2, p2Name, 3 * canvas.width / 4, canvas.height - 40, '#ffafcc', { left: 'ArrowLeft', right: 'ArrowRight', shoot: 'Enter' }));
+        players.push(new Player(2, p2Name, 3 * canvas.width / 4, canvas.height - 40, '#ffafcc', { 
+            left: 'ArrowLeft', 
+            right: 'ArrowRight', 
+            up: 'ArrowUp', 
+            down: 'ArrowDown', 
+            shoot: 'Enter' 
+        }));
     }
 
     playerBullets = [];
