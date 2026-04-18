@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>8-Bit Space Invaders Duo</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="game-container">
+        <header>
+            <h1>SPACE INVADERS DUO</h1>
+            <p class="subtitle">8-BIT REVENGE</p>
+        </header>
+
+        <div id="setup-screen" class="screen active">
+            <div class="mode-group">
+                <p>PLAYERS:</p>
+                <div class="mode-options">
+                    <button class="mode-btn" data-players="1">1 PLAYER</button>
+                    <button class="mode-btn active" data-players="2">2 PLAYERS</button>
+                </div>
+            </div>
+
+            <div id="player-inputs">
+                <div class="input-group" id="p1-input">
+                    <label for="player1-name">PLAYER 1 NAME:</label>
+                    <input type="text" id="player1-name" maxlength="10" placeholder="PILOT 1">
+                </div>
+                <div class="input-group" id="p2-input">
+                    <label for="player2-name">PLAYER 2 NAME:</label>
+                    <input type="text" id="player2-name" maxlength="10" placeholder="PILOT 2">
+                </div>
+            </div>
+            
+            <div class="difficulty-group">
+                <p>DIFFICULTY:</p>
+                <div class="difficulty-options">
+                    <button class="diff-btn active" data-difficulty="low">LOW</button>
+                    <button class="diff-btn" data-difficulty="medium">MEDIUM</button>
+                    <button class="diff-btn" data-difficulty="hard">HARD</button>
+                </div>
+            </div>
+
+            <button id="start-btn">LAUNCH MISSION</button>
+
+            <div id="high-score-board">
+                <h3>TOP GUNS</h3>
+                <ol id="score-list"></ol>
+            </div>
+        </div>
+
+        <div id="game-screen" class="screen">
+            <div id="hud">
+                <div class="stat">P1: <span id="p1-score">0</span></div>
+                <div class="stat">P2: <span id="p2-score">0</span></div>
+                <div class="stat">LEVEL: <span id="level-display">1</span></div>
+                <div class="game-actions">
+                    <button id="pause-btn" class="action-btn">PAUSE</button>
+                    <button id="quit-btn" class="action-btn">QUIT</button>
+                </div>
+            </div>
+            <div id="canvas-container">
+                <canvas id="gameCanvas"></canvas>
+                <div id="pause-overlay" class="overlay">
+                    <h2>PAUSED</h2>
+                    <p>PRESS 'P' OR CLICK TO RESUME</p>
+                </div>
+                <div id="upgrade-overlay" class="overlay">
+                    <h2 id="upgrade-title">PLAYER 1 UPGRADE</h2>
+                    <div class="cards-container">
+                        <div class="card" data-upgrade="rapid">
+                            <h3>RAPID FIRE</h3>
+                            <p>Reload faster</p>
+                            <span class="level-info">LVL 1/9</span>
+                        </div>
+                        <div class="card" data-upgrade="explosion">
+                            <h3>EXPLOSION</h3>
+                            <p>Area damage chance</p>
+                            <span class="level-info">10% CHANCE</span>
+                        </div>
+                        <div class="card" data-upgrade="laser">
+                            <h3>LASER</h3>
+                            <p>Piercing beam chance</p>
+                            <span class="level-info">10% CHANCE</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="controls-hint">
+                P1: WASD + SPACE | P2: ARROWS + ENTER | P: PAUSE
+            </div>
+        </div>
+
+        <div id="game-over-screen" class="screen">
+            <h2>MISSION FAILED</h2>
+            <div class="final-scores">
+                <p><span id="final-p1-name">P1</span>: <span id="final-p1-score">0</span></p>
+                <p><span id="final-p2-name">P2</span>: <span id="final-p2-score">0</span></p>
+            </div>
+            <button id="restart-btn">RETRY MISSION</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
