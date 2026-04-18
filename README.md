@@ -4,7 +4,7 @@ A polished, 4-player cooperative 8-bit arcade shooter. Zap the things, battle ma
 
 **Live Demo**: [https://zap-the-thing.onrender.com/](https://zap-the-thing.onrender.com/)
 
-![Zap the Thing!](https://via.placeholder.com/800x400.png?text=Zap+the+Thing!)
+![Zap the Thing! Gameplay](public/images/screenshot.png)
 
 ## 🚀 Features
 
