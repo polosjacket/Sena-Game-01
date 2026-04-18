@@ -54,3 +54,7 @@ All notable changes and instructions implemented in this session:
 
 ### [1.0.13] - Overlay Reset Fix
 - Fixed a bug where the Upgrade and Pause overlays could persist into a new mission. Explicitly hiding all overlays upon calling `startGame`.
+
+### [1.0.14] - Continue Mission & Heart Logic Update
+- Added 'CONTINUE MISSION' feature to resume gameplay after death without resetting level/score.
+- Updated Heart spawn logic to appear whenever any player is dead, with an increased spawn frequency (1% per frame).

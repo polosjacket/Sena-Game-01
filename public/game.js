@@ -566,6 +566,29 @@ function startGame() {
     gameLoop();
 }
 
+function continueGame() {
+    players.forEach(p => {
+        p.alive = true;
+        p.invincible = 300; // 5 seconds
+        p.cooldown = 0;
+    });
+    
+    playerBullets = [];
+    invaderBullets = [];
+    heart = null;
+    heartSpawnedInRound = false;
+    
+    document.getElementById('game-over-screen').classList.remove('active');
+    document.getElementById('game-screen').classList.add('active');
+    document.getElementById('pause-overlay').classList.remove('active');
+    document.getElementById('upgrade-overlay').classList.remove('active');
+    
+    sfx.init();
+    sfx.playBGM();
+    gameState = 'PLAYING';
+    gameLoop();
+}
+
 let invaderDirection = 1;
 let invaderDrop = false;
 
