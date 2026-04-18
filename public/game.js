@@ -253,9 +253,10 @@ class Particle {
 }
 
 function createFirework(x, y) {
+    if (fireworks.length > 300) return; // Performance cap
     sfx.playExplosion();
     const colors = ['#ff0000', '#00ff00', '#0000ff', '#ffff00', '#ff00ff', '#00ffff', '#ffffff', '#ff8000'];
-    for (let i = 0; i < 50; i++) {
+    for (let i = 0; i < 15; i++) {
         fireworks.push(new Particle(x, y, colors[Math.floor(Math.random() * colors.length)]));
     }
 }
@@ -306,8 +307,33 @@ class Player {
             ctx.globalAlpha = 0.5;
         }
 
-        if (this.id === 1) { // KIRBY
-            // Body
+        if (this.id === 1 || this.id === 3) {
+            // Mario (1) or Luigi (3)
+            // Shoes
+            ctx.fillStyle = this.id === 1 ? '#5d4037' : '#3e2723';
+            ctx.fillRect(8, 35, 10, 5);
+            ctx.fillRect(22, 35, 10, 5);
+            // Overalls
+            ctx.fillStyle = this.id === 1 ? '#0d47a1' : '#1b5e20';
+            ctx.fillRect(10, 20, 20, 15);
+            // Shirt/Arms
+            ctx.fillStyle = this.id === 1 ? '#d32f2f' : '#2e7d32';
+            ctx.fillRect(5, 22, 5, 8);
+            ctx.fillRect(30, 22, 5, 8);
+            ctx.fillRect(12, 18, 16, 5);
+            // Head
+            ctx.fillStyle = '#ffccbc';
+            ctx.fillRect(12, 8, 16, 10);
+            // Hat
+            ctx.fillStyle = this.id === 1 ? '#d32f2f' : '#2e7d32';
+            ctx.fillRect(10, 5, 20, 5);
+            ctx.fillRect(12, 2, 16, 3);
+            // Eyes/Mustache
+            ctx.fillStyle = '#000';
+            ctx.fillRect(20, 10, 2, 3);
+            ctx.fillRect(18, 15, 8, 2);
+        } else if (this.id === 2) {
+            // Kirby
             ctx.fillStyle = '#ffafcc';
             ctx.beginPath();
             ctx.arc(20, 25, 15, 0, Math.PI * 2);
@@ -324,30 +350,26 @@ class Player {
             ctx.fillStyle = '#ff8fab';
             ctx.fillRect(10, 28, 4, 2);
             ctx.fillRect(26, 28, 4, 2);
-        } else { // MARIO
-            // Shoes
-            ctx.fillStyle = '#5d4037';
-            ctx.fillRect(8, 35, 10, 5);
-            ctx.fillRect(22, 35, 10, 5);
-            // Overalls
-            ctx.fillStyle = '#0d47a1';
-            ctx.fillRect(10, 20, 20, 15);
-            // Shirt/Arms
-            ctx.fillStyle = '#d32f2f';
-            ctx.fillRect(5, 22, 5, 8);
-            ctx.fillRect(30, 22, 5, 8);
-            ctx.fillRect(12, 18, 16, 5);
-            // Head
-            ctx.fillStyle = '#ffccbc';
-            ctx.fillRect(12, 8, 16, 10);
-            // Hat
-            ctx.fillStyle = '#d32f2f';
-            ctx.fillRect(10, 5, 20, 5);
-            ctx.fillRect(12, 2, 16, 3);
-            // Eyes/Mustache
-            ctx.fillStyle = '#000';
-            ctx.fillRect(20, 10, 2, 3);
-            ctx.fillRect(18, 15, 8, 2);
+        } else if (this.id === 4) {
+            // Meta Knight
+            ctx.fillStyle = '#1a237e'; // Body
+            ctx.beginPath();
+            ctx.arc(20, 25, 15, 0, Math.PI * 2);
+            ctx.fill();
+            // Mask
+            ctx.fillStyle = '#9e9e9e';
+            ctx.beginPath();
+            ctx.arc(20, 25, 12, Math.PI, 0, true);
+            ctx.fill();
+            // Eyes (yellow)
+            ctx.fillStyle = '#ffff00';
+            ctx.fillRect(14, 20, 4, 3);
+            ctx.fillRect(22, 20, 4, 3);
+            // Wings
+            ctx.fillStyle = '#311b92';
+            ctx.beginPath();
+            ctx.moveTo(5, 15); ctx.lineTo(-10, 5); ctx.lineTo(-5, 30); ctx.fill();
+            ctx.moveTo(35, 15); ctx.lineTo(50, 5); ctx.lineTo(45, 30); ctx.fill();
         }
 
         ctx.restore();
@@ -367,11 +389,14 @@ class Player {
             const isLaser = Math.random() < this.upgrades.laser;
             sfx.playShootPlayer();
             if (isLaser) {
-                playerBullets.push(new Bullet(this.x + this.width / 2 - 10, 0, '#ffffff', 0, this.id, 'laser'));
+                const b = new Bullet(this.x + this.width / 2 - 10, 0, '#ffffff', 0, this.id, 'laser');
+                playerBullets.push(b);
+                this.cooldown = 90; // Longer cooldown for laser
             } else {
-                playerBullets.push(new Bullet(this.x + this.width / 2 - 2, this.y, this.color, -BULLET_SPEED, this.id, 'normal'));
+                const b = new Bullet(this.x + this.width / 2 - 2, this.y, this.color, -7, this.id, 'normal');
+                playerBullets.push(b);
+                this.cooldown = Math.max(5, 30 - (this.upgrades.rapid * 3));
             }
-            this.cooldown = Math.max(4, 20 - (this.upgrades.rapid - 1) * 2);
         }
 
         if (this.cooldown > 0) this.cooldown--;
@@ -663,14 +688,43 @@ class Bullet {
     }
 
     draw() {
-        ctx.fillStyle = this.color;
+        ctx.save();
         if (this.type === 'laser') {
+            ctx.fillStyle = '#ffffff';
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00f2ff';
             ctx.globalAlpha = this.life / 10;
             ctx.fillRect(this.x, 0, this.width, canvas.height);
             ctx.globalAlpha = 1;
         } else {
-            ctx.fillRect(this.x, this.y, this.width, this.height);
+            ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+            if (this.ownerId === 1 || this.ownerId === 3) {
+                // HAMMER
+                ctx.rotate(Date.now() * 0.01);
+                ctx.fillStyle = '#9e9e9e';
+                ctx.fillRect(-6, -4, 12, 8);
+                ctx.fillStyle = '#795548';
+                ctx.fillRect(-1, 4, 2, 6);
+            } else if (this.ownerId === 2) {
+                // STAR
+                ctx.rotate(Date.now() * 0.005);
+                ctx.fillStyle = '#ffeb3b';
+                for(let i=0; i<5; i++) {
+                    ctx.rotate(Math.PI * 2 / 5);
+                    ctx.fillRect(0, -8, 2, 12);
+                }
+            } else if (this.ownerId === 4) {
+                // SWORD
+                ctx.fillStyle = '#cfd8dc';
+                ctx.fillRect(-2, -12, 4, 20);
+                ctx.fillStyle = '#fbc02d';
+                ctx.fillRect(-5, 8, 10, 2);
+            } else {
+                ctx.fillStyle = this.color;
+                ctx.fillRect(-this.width / 2, -this.height / 2, this.width, this.height);
+            }
         }
+        ctx.restore();
     }
 
     update() {
@@ -721,21 +775,23 @@ function startGame() {
     const p2Name = document.getElementById('player2-name').value || 'PILOT 2';
 
     players = [];
-    players.push(new Player(1, p1Name, canvas.width / 4, canvas.height - 40, '#bde0fe', { 
-        left: 'KeyA', 
-        right: 'KeyD', 
-        up: 'KeyW', 
-        down: 'KeyS', 
-        shoot: 'Space' 
+    players.push(new Player(1, p1Name, canvas.width * 0.2, canvas.height - 40, '#bde0fe', { 
+        left: 'KeyA', right: 'KeyD', up: 'KeyW', down: 'KeyS', shoot: 'Space' 
     }));
     
-    if (playerMode === 2) {
-        players.push(new Player(2, p2Name, 3 * canvas.width / 4, canvas.height - 40, '#ffafcc', { 
-            left: 'ArrowLeft', 
-            right: 'ArrowRight', 
-            up: 'ArrowUp', 
-            down: 'ArrowDown', 
-            shoot: 'Enter' 
+    if (playerMode >= 2) {
+        players.push(new Player(2, p2Name, canvas.width * 0.4, canvas.height - 40, '#ffafcc', { 
+            left: 'ArrowLeft', right: 'ArrowRight', up: 'ArrowUp', down: 'ArrowDown', shoot: 'Enter' 
+        }));
+    }
+    if (playerMode >= 4) {
+        const p3Name = document.getElementById('player3-name').value || 'LUIGI';
+        const p4Name = document.getElementById('player4-name').value || 'META';
+        players.push(new Player(3, p3Name, canvas.width * 0.6, canvas.height - 40, '#81c784', { 
+            left: 'KeyJ', right: 'KeyL', up: 'KeyI', down: 'KeyK', shoot: 'KeyU' 
+        }));
+        players.push(new Player(4, p4Name, canvas.width * 0.8, canvas.height - 40, '#7986cb', { 
+            left: 'KeyF', right: 'KeyH', up: 'KeyT', down: 'KeyG', shoot: 'KeyR' 
         }));
     }
 
@@ -862,12 +918,12 @@ function gameLoop() {
      * Bullet Collision Engine
      * Checks interactions between player/enemy bullets and targets.
      */
+    const invadersToRemove = new Set();
     playerBullets.forEach((b, bIdx) => {
         b.update();
         b.draw();
 
-        // Check collision with invaders
-        const player = players.find(p => p.id === b.ownerId);
+        const player = players.find(p => p.id === b.ownerId) || players[0];
         
         // Boss collision
         if (boss) {
@@ -884,27 +940,29 @@ function gameLoop() {
             }
         }
 
-        for (let i = invaders.length - 1; i >= 0; i--) {
+        for (let i = 0; i < invaders.length; i++) {
             const inv = invaders[i];
+            if (invadersToRemove.has(inv)) continue;
+
             if (b.x < inv.x + inv.width && b.x + b.width > inv.x && b.y < inv.y + inv.height && b.y + b.height > inv.y) {
                 // Damage invader
                 inv.hp -= 1;
                 sfx.playHitSFX();
 
                 if (inv.hp <= 0) {
-                    invaders.splice(i, 1);
+                    invadersToRemove.add(inv);
                     player.score += 100;
                     
                     // Explosion check
                     if (Math.random() < player.upgrades.explosion) {
                         createFirework(inv.x + inv.width / 2, inv.y + inv.height / 2); // Visual effect
-                        invaders = invaders.filter(otherInv => {
+                        invaders.forEach(otherInv => {
+                            if (invadersToRemove.has(otherInv)) return;
                             const dist = Math.hypot(otherInv.x - inv.x, otherInv.y - inv.y);
                             if (dist < 80 && otherInv !== inv) {
                                 player.score += 50;
-                                return false;
+                                invadersToRemove.add(otherInv);
                             }
-                            return true;
                         });
                     }
 
@@ -924,6 +982,11 @@ function gameLoop() {
             }
         }
     });
+
+    // Cleanup defeated invaders
+    if (invadersToRemove.size > 0) {
+        invaders = invaders.filter(inv => !invadersToRemove.has(inv));
+    }
 
     invaderBullets = invaderBullets.filter(b => b.y < canvas.height);
     invaderBullets.forEach((b, bIdx) => {
@@ -1203,12 +1266,23 @@ function initUIListeners() {
 
 function initPlayerMode() {
     const p2Input = document.getElementById('p2-input');
-    if (p2Input) {
-        if (playerMode === 1) {
-            p2Input.classList.add('hidden');
-        } else {
-            p2Input.classList.remove('hidden');
-        }
+    const p3Input = document.getElementById('p3-input');
+    const p4Input = document.getElementById('p4-input');
+    
+    // Hide all first
+    if (p2Input) p2Input.classList.add('hidden');
+    if (p3Input) p3Input.classList.add('hidden');
+    if (p4Input) p4Input.classList.add('hidden');
+    document.querySelectorAll('.p2-hud, .p3-hud, .p4-hud').forEach(h => h.classList.add('hidden'));
+
+    if (playerMode >= 2) {
+        if (p2Input) p2Input.classList.remove('hidden');
+        document.querySelectorAll('.p2-hud').forEach(h => h.classList.remove('hidden'));
+    }
+    if (playerMode >= 4) {
+        if (p3Input) p3Input.classList.remove('hidden');
+        if (p4Input) p4Input.classList.remove('hidden');
+        document.querySelectorAll('.p3-hud, .p4-hud').forEach(h => h.classList.remove('hidden'));
     }
 }
 

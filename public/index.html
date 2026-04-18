@@ -21,19 +21,28 @@
             <div class="mode-group">
                 <p>PLAYERS:</p>
                 <div class="mode-options">
-                    <button class="mode-btn" data-players="1">1 PLAYER</button>
-                    <button class="mode-btn active" data-players="2">2 PLAYERS</button>
+                    <button class="mode-btn" data-players="1">1P</button>
+                    <button class="mode-btn active" data-players="2">2P</button>
+                    <button class="mode-btn" data-players="4">4P</button>
                 </div>
             </div>
 
             <div id="player-inputs">
                 <div class="input-group" id="p1-input">
-                    <label for="player1-name">PLAYER 1 NAME:</label>
-                    <input type="text" id="player1-name" maxlength="10" placeholder="PILOT 1">
+                    <label for="player1-name">MARIO (P1):</label>
+                    <input type="text" id="player1-name" maxlength="10" value="MARIO">
                 </div>
                 <div class="input-group" id="p2-input">
-                    <label for="player2-name">PLAYER 2 NAME:</label>
-                    <input type="text" id="player2-name" maxlength="10" placeholder="PILOT 2">
+                    <label for="player2-name">KIRBY (P2):</label>
+                    <input type="text" id="player2-name" maxlength="10" value="KIRBY">
+                </div>
+                <div class="input-group hidden" id="p3-input">
+                    <label for="player3-name">LUIGI (P3):</label>
+                    <input type="text" id="player3-name" maxlength="10" value="LUIGI">
+                </div>
+                <div class="input-group hidden" id="p4-input">
+                    <label for="player4-name">META (P4):</label>
+                    <input type="text" id="player4-name" maxlength="10" value="META KNIGHT">
                 </div>
             </div>
             
@@ -57,7 +66,9 @@
         <div id="game-screen" class="screen">
             <div id="hud">
                 <div class="stat">P1: <span id="p1-score">0</span></div>
-                <div class="stat">P2: <span id="p2-score">0</span></div>
+                <div class="stat p2-hud">P2: <span id="p2-score">0</span></div>
+                <div class="stat p3-hud hidden">P3: <span id="p3-score">0</span></div>
+                <div class="stat p4-hud hidden">P4: <span id="p4-score">0</span></div>
                 <div class="stat">LEVEL: <span id="level-display">1</span></div>
                 <div class="game-actions">
                     <button id="pause-btn" class="action-btn">PAUSE</button>
@@ -97,7 +108,7 @@
                 </div>
             </div>
             <div id="controls-hint">
-                P1: WASD + SPACE | P2: ARROWS + ENTER | P: PAUSE
+                P1:WASD+SPACE | P2:ARROWS+ENT | P3:IJKL+U | P4:TFGH+R | P:PAUSE
             </div>
         </div>
 

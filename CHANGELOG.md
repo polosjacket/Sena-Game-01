@@ -148,3 +148,29 @@ All notable changes to this project will be documented in this file. This projec
     - In `DASHING`, horizontal velocity is set to `15 * dashDir` (approx. 900px/sec).
   - **Collision Engine**: Implemented an AABB check specifically during the `DASHING` state that flags any overlapping players as `alive = false`.
   - **State Reset**: Added boundary checks (`this.x > canvas.width` or `this.x < -this.width`) to trigger a return to the `IDLE` central state.
+
+## [1.0.26] - 2026-04-18
+### Laser Freeze & Performance Optimization
+- **Objective**: Resolve game-breaking freezes occurring during intense laser fire and round transitions.
+- **Detailed Technical Changes**:
+  - **Memory Optimization**: Implemented a global cap on `fireworks` particles (clamped at 300). Reduced particle generation density per explosion from 50 to 15 to prevent CPU spiking during laser multi-hits.
+  - **Logic Fix**: Restored `ownerId` assignment to laser bullets in `Player.update()`. This fixes an `undefined` reference crash in the collision engine when calculating laser damage levels.
+  - **Robust Collision**: Refactored the Bullet-Invader collision loop to be 'Collection Safe'. Used a `Set` (`invadersToRemove`) to batch removals after iteration, preventing array modification errors during high-frequency laser overlaps.
+  - **Audio Safety**: Added a `Math.max(500, ...)` clamp to the `winLoopTimeout` in `SoundEffects` to prevent recursive execution if the audio context clock fluctuates.
+
+## [1.0.27] - 2026-04-18
+### 4-Player Local Co-op & Character Specific Weapons
+- **Objective**: Expand the game to support 4 players simultaneously with distinct character identities and weaponry.
+- **Detailed Technical Changes**:
+  - **Player Roster**:
+    - **P1 (Mario)**: WASD + Space. Custom sprite drawing. Shoots rotating Hammers.
+    - **P2 (Kirby)**: Arrows + Enter. Custom arc-based drawing. Shoots spinning Stars.
+    - **P3 (Luigi)**: IJKL + U. Green-variant Mario sprite. Shoots rotating Hammers.
+    - **P4 (Meta Knight)**: TFGH + R. Masked/Winged sprite. Shoots Sword projectiles.
+  - **Rendering Engine**:
+    - Updated `Player.draw()` with multi-path logic for character-specific pixel art (using arc, rect, and paths).
+    - Refactored `Bullet.draw()` to use `ownerId` to determine projectile geometry (rotating hammers, star points, sword blades).
+  - **UI/UX**:
+    - Added `4P` mode button to `index.html`.
+    - Dynamic HUD scaling to show/hide P3 and P4 stats based on `playerMode`.
+    - Updated control hints to display all 4 sets of mappings.
