@@ -4,6 +4,30 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.34] - 2026-04-19
+### Documentation Alignment
+- **Objective**: Ensure documentation accurately reflects the new dynamic infrastructure settings.
+- **Detailed Technical Changes**:
+  - **Documentation**:
+    - Updated `README.md` to refer to the dynamically generated console URL instead of a hardcoded `localhost` link, aligning with the recent configuration consolidation.
+
+---
+
+
+## [1.0.33] - 2026-04-19
+### Configuration Consolidation & Smart Logging
+- **Objective**: Centralize environment management and improve infrastructure transparency during startup.
+- **Detailed Technical Changes**:
+  - **Architecture**:
+    - Introduced `config.js` as the single source of truth for all environment variables (`PORT`, `DB_PATH`, `NODE_ENV`).
+    - Implemented getter logic for environment-aware properties like `isProduction` and `hostname`.
+  - **Backend Integration**:
+    - Refactored `server.js` to utilize the new centralized configuration, removing scattered `process.env` calls.
+    - Enhanced startup logging to dynamically resolve and display the system hostname when running in production, while defaulting to `localhost` for development.
+
+---
+
+
 ## [1.0.32] - 2026-04-19
 ### Configuration Alignment & Git Hygiene
 - **Objective**: Optimize the project's version control configuration to exclude temporary and environment-specific files.

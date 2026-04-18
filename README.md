@@ -42,7 +42,8 @@ A polished, 4-player cooperative 8-bit arcade shooter. Zap the things, battle ma
    ```
 
 4. **Play the game**:
-   Open [http://localhost:3000](http://localhost:3000) in your browser.
+   Open the URL displayed in your terminal (typically `http://localhost:3000`) in your browser.
+
 
 ## 🎮 Controls
 

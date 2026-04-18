@@ -2,9 +2,10 @@ const express = require('express');
 const Database = require('better-sqlite3');
 const path = require('path');
 const cors = require('cors');
+const config = require('./config');
 
 const app = express();
-const port = process.env.PORT || 3000;
+
 
 // Middleware
 app.disable('x-powered-by');
@@ -13,8 +14,8 @@ app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Database setup
-const dbPath = process.env.DB_PATH || 'highscores.db';
-const db = new Database(dbPath);
+const db = new Database(config.dbPath);
+
 db.exec(`
   CREATE TABLE IF NOT EXISTS scores (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -51,10 +52,11 @@ app.post('/api/scores', (req, res) => {
 });
 
 if (require.main === module) {
-  app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+  app.listen(config.port, () => {
+    console.log(`Server running at http://${config.hostname}:${config.port}`);
   });
 }
+
 
 module.exports = app;
 
