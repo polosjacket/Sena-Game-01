@@ -11,6 +11,7 @@ class SoundEffects {
     constructor() {
         this.ctx = null; // AudioContext initialized on user interaction
         this.bgmOsc = null; // Track BGM oscillator for stopping/starting
+        this.winOscs = []; // Track win theme oscillators for stopping
     }
 
     init() {
@@ -989,6 +990,9 @@ function updateUpgradeOverlay() {
 }
 
 function selectUpgrade(type) {
+    console.log('Upgrading:', type, 'for player:', currentUpgradingPlayer);
+    try { sfx.stopWinTheme(); } catch(e) {}
+    
     const player = players[currentUpgradingPlayer];
     
     if (type === 'rapid' && player.upgrades.rapid < 9) {
@@ -1142,6 +1146,7 @@ function initUIListeners() {
 
     document.querySelectorAll('.card').forEach(card => {
         card.addEventListener('click', () => {
+            console.log('Card clicked:', card.dataset.upgrade, 'Current State:', gameState);
             if (gameState === 'UPGRADING') selectUpgrade(card.dataset.upgrade);
         });
     });

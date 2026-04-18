@@ -108,3 +108,21 @@ All notable changes to this project will be documented in this file. This projec
   - **Procedural Audio**: Implemented `SoundEffects` using `OscillatorNode` and `GainNode`. Square waves for player shots, Sawtooth for enemies.
   - **Persistence**: Integrated `better-sqlite3` on the backend with `/api/scores` endpoints for POSTing and GETing the top 3 scores.
   - **Collision**: Implemented AABB (Axis-Aligned Bounding Box) collision detection for bullets and entities.
+
+## [1.0.22] - 2026-04-18
+### Kirby Win Theme Implementation
+- **Objective**: Replace the generic win jingle with an upbeat theme inspired by Kirby and the Forgotten Land.
+- **Detailed Technical Changes**:
+  - **Melody Engine**: Rewrote `playWinJingle` to use a scheduled sequence of square-wave oscillators. It now plays a multi-note melody (C5, Bb4, B4, C5 sequence).
+  - **Audio Lifecycle**: Added `this.winOscs` array to the `SoundEffects` class to track and stop active melody notes.
+  - **Looping Logic**: Implemented `winLoopTimeout` to re-trigger the jingle every ~1.5 seconds while in the `UPGRADING` state.
+  - **Cleanup**: Integrated `sfx.stopWinTheme()` into the `selectUpgrade` function to immediately terminate the victory music when the next round is initialized.
+
+## [1.0.23] - 2026-04-18
+### Upgrade Screen Interaction Fixes
+- **Objective**: Resolve issues preventing players from selecting upgrades after a round victory.
+- **Detailed Technical Changes**:
+  - **Loop Management**: Removed redundant `gameLoop()` call in `selectUpgrade`. Since the loop already runs in the background (waiting for `gameState` to change from `UPGRADING` to `PLAYING`), this prevents multiple parallel animation frames from stacking.
+  - **UI Interaction**: Added `pointer-events: all !important` to the `.card` CSS class to override any potential transparency or overlay blocks from the CRT filter.
+  - **Robustness**: Wrapped `sfx.stopWinTheme()` in a try/catch block to ensure that audio state issues do not block the execution of the upgrade logic.
+  - **Diagnostics**: Added `console.log` telemetry to track card clicks and active player indices during the upgrade phase.
