@@ -3,10 +3,14 @@
  */
 
 // Sound Engine
+/**
+ * Procedural Sound Engine using Web Audio API.
+ * Generates all game audio (BGM, SFX) without external assets.
+ */
 class SoundEffects {
     constructor() {
-        this.ctx = null;
-        this.bgmOsc = null;
+        this.ctx = null; // AudioContext initialized on user interaction
+        this.bgmOsc = null; // Track BGM oscillator for stopping/starting
     }
 
     init() {
@@ -261,28 +265,32 @@ window.addEventListener('keydown', e => keys[e.code] = true);
 window.addEventListener('keyup', e => keys[e.code] = false);
 
 // Classes
+/**
+ * Player class managing ship state, movement, shooting, and upgrades.
+ * Interaction: Interacts with Bullet (spawning) and Heart (revival).
+ */
 class Player {
-    constructor(id, name, x, y, color, controls) {
+    constructor(id, name, x, y, color, keys) {
         this.id = id;
-        this.name = name || `PILOT ${id}`;
+        this.name = name;
         this.x = x;
         this.y = y;
         this.width = 40;
         this.height = 40;
         this.color = color;
-        this.controls = controls;
-        this.score = 0;
-        this.cooldown = 0;
+        this.keys = keys;
         this.alive = true;
-        this.invincible = 0; // Frames
+        this.score = 0;
+        this.cooldown = 0; // Frames until next shot
+        this.invincible = 0; // Frames of invincibility
         
-        // Upgrades
+        // Dynamic stats modified by the Upgrade Screen
         this.upgrades = {
-            rapid: 1, // Max 9
-            explosion: 0.1, // Max 0.5
-            laser: 0.1, // Chance (Max 0.5)
-            laserLvl: 1, // Damage level (Max 10)
-            freeze: 0 // Chance (Max 0.5)
+            rapid: 1, // Reduces fire cooldown (Level 1-9)
+            explosion: 0.1, // Chance of area-of-effect damage
+            laser: 0.1, // Chance of firing a piercing laser
+            laserLvl: 1, // Damage multiplier for lasers
+            freeze: 0 // Chance of freezing enemies in place
         };
     }
 
@@ -349,10 +357,10 @@ class Player {
         
         if (this.invincible > 0) this.invincible--;
 
-        if (keys[this.controls.left] && this.x > 0) this.x -= PLAYER_SPEED;
-        if (keys[this.controls.right] && this.x < canvas.width - this.width) this.x += PLAYER_SPEED;
+        if (keys[this.keys.left] && this.x > 0) this.x -= PLAYER_SPEED;
+        if (keys[this.keys.right] && this.x < canvas.width - this.width) this.x += PLAYER_SPEED;
 
-        if (keys[this.controls.shoot] && this.cooldown <= 0) {
+        if (keys[this.keys.shoot] && this.cooldown <= 0) {
             const isLaser = Math.random() < this.upgrades.laser;
             sfx.playShootPlayer();
             if (isLaser) {
@@ -397,19 +405,23 @@ class Heart {
 }
 
 class Invader {
-    constructor(x, y, speed) {
+    constructor(x, y, speed, hp) {
         this.x = x;
         this.y = y;
         this.width = INVADER_SIZE;
         this.height = INVADER_SIZE;
         this.speed = speed;
+        this.maxHp = hp;
+        this.hp = hp;
         this.alive = true;
         this.frozen = 0; // Frames
     }
 
     draw() {
         if (this.frozen > 0) ctx.fillStyle = '#caf0f8';
+        else if (this.hp < this.maxHp) ctx.fillStyle = '#b79bed'; // Damaged color
         else ctx.fillStyle = '#cdb4db';
+        
         // Simple 8-bit invader shape
         ctx.fillRect(this.x + 5, this.y + 5, this.width - 10, this.height - 10);
         ctx.fillRect(this.x + 10, this.y + 2, 10, 5); // top
@@ -426,6 +438,11 @@ class Invader {
     }
 }
 
+/**
+ * Boss Class: Advanced enemy that appears every 10 levels.
+ * Features a multi-state attack machine (Slams, Sweeps, Lasers).
+ * Interaction: Collision triggers endGame or damages player.
+ */
 class Boss {
     constructor(hp, level) {
         this.width = 100;
@@ -641,9 +658,10 @@ function initInvaders() {
     const padding = 20;
     const startX = (canvas.width - (cols * (INVADER_SIZE + padding))) / 2;
 
+    const invaderHp = 1 + Math.floor((level - 1) / 5);
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-            invaders.push(new Invader(startX + c * (INVADER_SIZE + padding), 50 + r * (INVADER_SIZE + padding), speed));
+            invaders.push(new Invader(startX + c * (INVADER_SIZE + padding), 50 + r * (INVADER_SIZE + padding), speed, invaderHp));
         }
     }
 }
@@ -702,6 +720,10 @@ function continueGame() {
 let invaderDirection = 1;
 let invaderDrop = false;
 
+/**
+ * Main Game Loop (called via requestAnimationFrame).
+ * Orchestrates: Movement -> Collision -> Drawing -> State Transitions.
+ */
 function gameLoop() {
     if (gameState === 'PAUSED' || gameState === 'UPGRADING') {
         animationId = requestAnimationFrame(gameLoop);
@@ -774,6 +796,10 @@ function gameLoop() {
 
     // Update & Draw Bullets
     playerBullets = playerBullets.filter(b => (b.type === 'laser' ? b.life > 0 : b.y > 0));
+    /**
+     * Bullet Collision Engine
+     * Checks interactions between player/enemy bullets and targets.
+     */
     playerBullets.forEach((b, bIdx) => {
         b.update();
         b.draw();
@@ -799,14 +825,17 @@ function gameLoop() {
         for (let i = invaders.length - 1; i >= 0; i--) {
             const inv = invaders[i];
             if (b.x < inv.x + inv.width && b.x + b.width > inv.x && b.y < inv.y + inv.height && b.y + b.height > inv.y) {
-                // If it's a laser, don't remove the bullet, just the invader
-                if (b.type === 'normal') {
-                    playerBullets.splice(bIdx, 1);
+                // Damage invader
+                inv.hp -= 1;
+                sfx.playHitSFX();
+
+                if (inv.hp <= 0) {
+                    invaders.splice(i, 1);
+                    player.score += 100;
                     
                     // Explosion check
                     if (Math.random() < player.upgrades.explosion) {
                         createFirework(inv.x + inv.width / 2, inv.y + inv.height / 2); // Visual effect
-                        // Kill neighbors
                         invaders = invaders.filter(otherInv => {
                             const dist = Math.hypot(otherInv.x - inv.x, otherInv.y - inv.y);
                             if (dist < 80 && otherInv !== inv) {
@@ -815,24 +844,21 @@ function gameLoop() {
                             }
                             return true;
                         });
-                        // Since we filtered, we need to restart or break to avoid index issues
-                        break; 
+                    }
+
+                    // Freeze check
+                    if (Math.random() < player.upgrades.freeze) {
+                        invaders.forEach(invToFreeze => {
+                            if (Math.abs(invToFreeze.x - b.x) < 50) invToFreeze.frozen = 120;
+                        });
                     }
                 }
-                
-                invaders.splice(i, 1);
-                player.score += 100;
-                sfx.playHitSFX();
-                
-                // Freeze check
-                if (Math.random() < player.upgrades.freeze) {
-                    invaders.forEach(inv => {
-                        if (Math.abs(inv.x - b.x) < 50) inv.frozen = 120; // 2 seconds
-                    });
+
+                // If it's a normal bullet, remove it
+                if (b.type === 'normal') {
+                    playerBullets.splice(bIdx, 1);
+                    break;
                 }
-                
-                // If it's not a laser, we've already spliced the bullet, so break the invader loop
-                if (b.type === 'normal') break;
             }
         }
     });
@@ -898,7 +924,7 @@ function gameLoop() {
         }
     });
 
-    // Check Win (Level Up)
+    // Check Win Condition (All Invaders + Boss defeated)
     if (invaders.length === 0 && !boss && gameState === 'PLAYING') {
         gameState = 'WIN_ANIMATION';
         // Create multiple fireworks
@@ -1061,10 +1087,16 @@ function safeAddListener(id, event, callback) {
     }
 }
 
+/**
+ * UI Event Listeners Initialization
+ * Connects HTML buttons to JS functions and manages responsiveness.
+ */
 function initUIListeners() {
+    // Mission Start
     safeAddListener('start-btn', 'click', startGame);
     safeAddListener('pause-btn', 'click', togglePause);
-    safeAddListener('quit-btn', 'click', quitToMenu);
+    // Continue/Retry actions
+    safeAddListener('continue-btn', 'click', continueGame);
     safeAddListener('restart-btn', 'click', () => {
         document.getElementById('game-over-screen').classList.remove('active');
         document.getElementById('setup-screen').classList.add('active');

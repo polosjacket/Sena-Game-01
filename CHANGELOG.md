@@ -66,3 +66,10 @@ All notable changes and instructions implemented in this session:
 - Implemented advanced Boss mechanics: Hand Slams (Lvl 50+), Side Sweeps (Lvl 70+), and Center Lasers (Lvl 100+).
 - New Boss Health Scaling: 100 HP base, +50 HP per boss level.
 - New 'FREEZE' Card: Exclusive post-boss reward that can freeze enemies in place.
+
+### [1.0.17] - Scaling Enemy HP
+- Enemies now gain +1 HP for every 5 levels completed (e.g., Level 6+ requires 2 shots).
+- Added visual feedback for damaged enemies (darker purple color).
+
+### [1.0.18] - Code Documentation
+- Added comprehensive JSDoc-style comments to game.js explaining class structures, the main game loop, collision engine, and UI interactions.
