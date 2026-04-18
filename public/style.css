@@ -316,12 +316,29 @@ button {
     text-shadow: 4px 4px 0px #1b263b;
 }
 
-.final-scores {
-    text-align: center;
-    margin-bottom: 20px;
-}
-
 .final-scores p {
     margin: 10px 0;
     font-size: 14px;
+}
+
+.game-over-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#continue-btn {
+    background: #00ff54;
+    color: var(--bg-color);
+    border: none;
+    padding: 15px 30px;
+    font-family: var(--font-main);
+    font-size: 14px;
+    cursor: pointer;
+    box-shadow: 4px 4px 0px #00a035;
+}
+
+#continue-btn:hover {
+    transform: translate(-2px, -2px);
+    box-shadow: 6px 6px 0px #00a035;
 }
