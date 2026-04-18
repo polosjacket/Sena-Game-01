@@ -174,3 +174,13 @@ All notable changes to this project will be documented in this file. This projec
     - Added `4P` mode button to `index.html`.
     - Dynamic HUD scaling to show/hide P3 and P4 stats based on `playerMode`.
     - Updated control hints to display all 4 sets of mappings.
+
+## [1.0.28] - 2026-04-18
+### Character Role Correction (P1 Kirby)
+- **Objective**: Re-align character assignments so Kirby is P1 and Mario is P2.
+- **Detailed Technical Changes**:
+  - **Identity Swap**: Swapped default names and labels in `index.html` (P1: Kirby, P2: Mario).
+  - **Drawing Logic**: Updated `Player.draw()` to associate `ID 1` with the pink round sprite (Kirby) and `ID 2` with the red plumber sprite (Mario).
+  - **Weapon Mapping**: 
+    - `ownerId 1` (Kirby) now triggers the Star projectile geometry.
+    - `ownerId 2` and `3` (Mario/Luigi) trigger the Hammer projectile geometry.

@@ -307,33 +307,8 @@ class Player {
             ctx.globalAlpha = 0.5;
         }
 
-        if (this.id === 1 || this.id === 3) {
-            // Mario (1) or Luigi (3)
-            // Shoes
-            ctx.fillStyle = this.id === 1 ? '#5d4037' : '#3e2723';
-            ctx.fillRect(8, 35, 10, 5);
-            ctx.fillRect(22, 35, 10, 5);
-            // Overalls
-            ctx.fillStyle = this.id === 1 ? '#0d47a1' : '#1b5e20';
-            ctx.fillRect(10, 20, 20, 15);
-            // Shirt/Arms
-            ctx.fillStyle = this.id === 1 ? '#d32f2f' : '#2e7d32';
-            ctx.fillRect(5, 22, 5, 8);
-            ctx.fillRect(30, 22, 5, 8);
-            ctx.fillRect(12, 18, 16, 5);
-            // Head
-            ctx.fillStyle = '#ffccbc';
-            ctx.fillRect(12, 8, 16, 10);
-            // Hat
-            ctx.fillStyle = this.id === 1 ? '#d32f2f' : '#2e7d32';
-            ctx.fillRect(10, 5, 20, 5);
-            ctx.fillRect(12, 2, 16, 3);
-            // Eyes/Mustache
-            ctx.fillStyle = '#000';
-            ctx.fillRect(20, 10, 2, 3);
-            ctx.fillRect(18, 15, 8, 2);
-        } else if (this.id === 2) {
-            // Kirby
+        if (this.id === 1) {
+            // Kirby (P1)
             ctx.fillStyle = '#ffafcc';
             ctx.beginPath();
             ctx.arc(20, 25, 15, 0, Math.PI * 2);
@@ -350,7 +325,33 @@ class Player {
             ctx.fillStyle = '#ff8fab';
             ctx.fillRect(10, 28, 4, 2);
             ctx.fillRect(26, 28, 4, 2);
-        } else if (this.id === 4) {
+        } else if (this.id === 2 || this.id === 3) {
+            // Mario (P2) or Luigi (P3)
+            // Shoes
+            ctx.fillStyle = this.id === 2 ? '#5d4037' : '#3e2723';
+            ctx.fillRect(8, 35, 10, 5);
+            ctx.fillRect(22, 35, 10, 5);
+            // Overalls
+            ctx.fillStyle = this.id === 2 ? '#0d47a1' : '#1b5e20';
+            ctx.fillRect(10, 20, 20, 15);
+            // Shirt/Arms
+            ctx.fillStyle = this.id === 2 ? '#d32f2f' : '#2e7d32';
+            ctx.fillRect(5, 22, 5, 8);
+            ctx.fillRect(30, 22, 5, 8);
+            ctx.fillRect(12, 18, 16, 5);
+            // Head
+            ctx.fillStyle = '#ffccbc';
+            ctx.fillRect(12, 8, 16, 10);
+            // Hat
+            ctx.fillStyle = this.id === 2 ? '#d32f2f' : '#2e7d32';
+            ctx.fillRect(10, 5, 20, 5);
+            ctx.fillRect(12, 2, 16, 3);
+            // Eyes/Mustache
+            ctx.fillStyle = '#000';
+            ctx.fillRect(20, 10, 2, 3);
+            ctx.fillRect(18, 15, 8, 2);
+        }
+ else if (this.id === 4) {
             // Meta Knight
             ctx.fillStyle = '#1a237e'; // Body
             ctx.beginPath();
@@ -698,21 +699,21 @@ class Bullet {
             ctx.globalAlpha = 1;
         } else {
             ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
-            if (this.ownerId === 1 || this.ownerId === 3) {
-                // HAMMER
-                ctx.rotate(Date.now() * 0.01);
-                ctx.fillStyle = '#9e9e9e';
-                ctx.fillRect(-6, -4, 12, 8);
-                ctx.fillStyle = '#795548';
-                ctx.fillRect(-1, 4, 2, 6);
-            } else if (this.ownerId === 2) {
-                // STAR
+            if (this.ownerId === 1) {
+                // STAR (Kirby)
                 ctx.rotate(Date.now() * 0.005);
                 ctx.fillStyle = '#ffeb3b';
                 for(let i=0; i<5; i++) {
                     ctx.rotate(Math.PI * 2 / 5);
                     ctx.fillRect(0, -8, 2, 12);
                 }
+            } else if (this.ownerId === 2 || this.ownerId === 3) {
+                // HAMMER (Mario/Luigi)
+                ctx.rotate(Date.now() * 0.01);
+                ctx.fillStyle = '#9e9e9e';
+                ctx.fillRect(-6, -4, 12, 8);
+                ctx.fillStyle = '#795548';
+                ctx.fillRect(-1, 4, 2, 6);
             } else if (this.ownerId === 4) {
                 // SWORD
                 ctx.fillStyle = '#cfd8dc';
