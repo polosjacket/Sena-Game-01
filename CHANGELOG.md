@@ -4,6 +4,82 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.28] - 2026-04-18
+### Character Role Correction (P1 Kirby)
+- **Objective**: Re-align character assignments so Kirby is P1 and Mario is P2.
+- **Detailed Technical Changes**:
+  - **Identity Swap**: Swapped default names and labels in `index.html` (P1: Kirby, P2: Mario).
+  - **Drawing Logic**: Updated `Player.draw()` to associate `ID 1` with the pink round sprite (Kirby) and `ID 2` with the red plumber sprite (Mario).
+  - **Weapon Mapping**: 
+    - `ownerId 1` (Kirby) now triggers the Star projectile geometry.
+    - `ownerId 2` and `3` (Mario/Luigi) trigger the Hammer projectile geometry.
+
+## [1.0.27] - 2026-04-18
+### 4-Player Local Co-op & Character Specific Weapons
+- **Objective**: Expand the game to support 4 players simultaneously with distinct character identities and weaponry.
+- **Detailed Technical Changes**:
+  - **Player Roster**:
+    - **P1 (Mario)**: WASD + Space. Custom sprite drawing. Shoots rotating Hammers.
+    - **P2 (Kirby)**: Arrows + Enter. Custom arc-based drawing. Shoots spinning Stars.
+    - **P3 (Luigi)**: IJKL + U. Green-variant Mario sprite. Shoots rotating Hammers.
+    - **P4 (Meta Knight)**: TFGH + R. Masked/Winged sprite. Shoots Sword projectiles.
+  - **Rendering Engine**:
+    - Updated `Player.draw()` with multi-path logic for character-specific pixel art (using arc, rect, and paths).
+    - Refactored `Bullet.draw()` to use `ownerId` to determine projectile geometry (rotating hammers, star points, sword blades).
+  - **UI/UX**:
+    - Added `4P` mode button to `index.html`.
+    - Dynamic HUD scaling to show/hide P3 and P4 stats based on `playerMode`.
+    - Updated control hints to display all 4 sets of mappings.
+
+## [1.0.26] - 2026-04-18
+### Laser Freeze & Performance Optimization
+- **Objective**: Resolve game-breaking freezes occurring during intense laser fire and round transitions.
+- **Detailed Technical Changes**:
+  - **Memory Optimization**: Implemented a global cap on `fireworks` particles (clamped at 300). Reduced particle generation density per explosion from 50 to 15 to prevent CPU spiking during laser multi-hits.
+  - **Logic Fix**: Restored `ownerId` assignment to laser bullets in `Player.update()`. This fixes an `undefined` reference crash in the collision engine when calculating laser damage levels.
+  - **Robust Collision**: Refactored the Bullet-Invader collision loop to be 'Collection Safe'. Used a `Set` (`invadersToRemove`) to batch removals after iteration, preventing array modification errors during high-frequency laser overlaps.
+  - **Audio Safety**: Added a `Math.max(500, ...)` clamp to the `winLoopTimeout` in `SoundEffects` to prevent recursive execution if the audio context clock fluctuates.
+
+## [1.0.25] - 2026-04-18
+### Boss 'Wall Dash' Attack Pattern
+- **Objective**: Introduce a high-speed horizontal traversal attack to pressure player positioning.
+- **Detailed Technical Changes**:
+  - **Attack States**: Added `DASH_PREP` and `DASHING` states to the Boss AI.
+  - **Execution Logic**: 
+    - In `DASH_PREP`, the boss repositioned to `x = -width` or `x = canvas.width` and a random vertical coordinate between 100px and `canvas.height - 200px`.
+    - In `DASHING`, horizontal velocity is set to `15 * dashDir` (approx. 900px/sec).
+  - **Collision Engine**: Implemented an AABB check specifically during the `DASHING` state that flags any overlapping players as `alive = false`.
+  - **State Reset**: Added boundary checks (`this.x > canvas.width` or `this.x < -this.width`) to trigger a return to the `IDLE` central state.
+
+## [1.0.24] - 2026-04-18
+### 4-Way Pilot Movement
+- **Objective**: Enhance player mobility by allowing vertical movement in addition to horizontal strafing.
+- **Detailed Technical Changes**:
+  - **Class Update**: Modified `Player.update()` to include checks for `this.keys.up` and `this.keys.down`.
+  - **Boundary Clamping**: Implemented vertical clamping (`this.y > 0` and `this.y < canvas.height - this.height`) to prevent players from leaving the play area.
+  - **Control Mapping**: 
+    - **P1**: Re-mapped to WASD + Space.
+    - **P2**: Re-mapped to Arrow Keys + Enter.
+  - **Physics**: Utilized existing `PLAYER_SPEED` constant for consistent movement velocity across all 4 axes.
+
+## [1.0.23] - 2026-04-18
+### Upgrade Screen Interaction Fixes
+- **Objective**: Resolve issues preventing players from selecting upgrades after a round victory.
+- **Detailed Technical Changes**:
+  - **Loop Management**: Removed redundant `gameLoop()` call in `selectUpgrade`. Since the loop already runs in the background (waiting for `gameState` to change from `UPGRADING` to `PLAYING`), this prevents multiple parallel animation frames from stacking.
+  - **UI Interaction**: Added `pointer-events: all !important` to the `.card` CSS class to override any potential transparency or overlay blocks from the CRT filter.
+  - **Robustness**: Wrapped `sfx.stopWinTheme()` in a try/catch block to ensure that audio state issues do not block the execution of the upgrade logic.
+  - **Diagnostics**: Added `console.log` telemetry to track card clicks and active player indices during the upgrade phase.
+
+## [1.0.22] - 2026-04-18
+### Kirby Win Theme Implementation
+- **Objective**: Replace the generic win jingle with an upbeat theme inspired by Kirby and the Forgotten Land.
+- **Detailed Technical Changes**:
+  - **Melody Engine**: Rewrote `playWinJingle` to use a scheduled sequence of square-wave oscillators. It now plays a multi-note melody (C5, Bb4, B4, C5 sequence).
+  - **Audio Lifecycle**: Added `this.winOscs` array to the `SoundEffects` class to track and stop active melody notes.
+  - **Looping Logic**: Implemented `winLoopTimeout` to re-trigger the jingle every ~1.5 seconds while in the `UPGRADING` state.
+  - **Cleanup**: Integrated `sfx.stopWinTheme()` into the `selectUpgrade` function to immediately terminate the victory music when the next round is initialized.
+
 ## [1.0.21] - 2026-04-18
 ### Boss Slam Difficulty Scaling & Multi-Limb Evolution
 - **Objective**: Refine Boss difficulty curve to engage players earlier (Level 20+) and provide visual growth feedback.
@@ -108,79 +184,3 @@ All notable changes to this project will be documented in this file. This projec
   - **Procedural Audio**: Implemented `SoundEffects` using `OscillatorNode` and `GainNode`. Square waves for player shots, Sawtooth for enemies.
   - **Persistence**: Integrated `better-sqlite3` on the backend with `/api/scores` endpoints for POSTing and GETing the top 3 scores.
   - **Collision**: Implemented AABB (Axis-Aligned Bounding Box) collision detection for bullets and entities.
-
-## [1.0.22] - 2026-04-18
-### Kirby Win Theme Implementation
-- **Objective**: Replace the generic win jingle with an upbeat theme inspired by Kirby and the Forgotten Land.
-- **Detailed Technical Changes**:
-  - **Melody Engine**: Rewrote `playWinJingle` to use a scheduled sequence of square-wave oscillators. It now plays a multi-note melody (C5, Bb4, B4, C5 sequence).
-  - **Audio Lifecycle**: Added `this.winOscs` array to the `SoundEffects` class to track and stop active melody notes.
-  - **Looping Logic**: Implemented `winLoopTimeout` to re-trigger the jingle every ~1.5 seconds while in the `UPGRADING` state.
-  - **Cleanup**: Integrated `sfx.stopWinTheme()` into the `selectUpgrade` function to immediately terminate the victory music when the next round is initialized.
-
-## [1.0.23] - 2026-04-18
-### Upgrade Screen Interaction Fixes
-- **Objective**: Resolve issues preventing players from selecting upgrades after a round victory.
-- **Detailed Technical Changes**:
-  - **Loop Management**: Removed redundant `gameLoop()` call in `selectUpgrade`. Since the loop already runs in the background (waiting for `gameState` to change from `UPGRADING` to `PLAYING`), this prevents multiple parallel animation frames from stacking.
-  - **UI Interaction**: Added `pointer-events: all !important` to the `.card` CSS class to override any potential transparency or overlay blocks from the CRT filter.
-  - **Robustness**: Wrapped `sfx.stopWinTheme()` in a try/catch block to ensure that audio state issues do not block the execution of the upgrade logic.
-  - **Diagnostics**: Added `console.log` telemetry to track card clicks and active player indices during the upgrade phase.
-
-## [1.0.24] - 2026-04-18
-### 4-Way Pilot Movement
-- **Objective**: Enhance player mobility by allowing vertical movement in addition to horizontal strafing.
-- **Detailed Technical Changes**:
-  - **Class Update**: Modified `Player.update()` to include checks for `this.keys.up` and `this.keys.down`.
-  - **Boundary Clamping**: Implemented vertical clamping (`this.y > 0` and `this.y < canvas.height - this.height`) to prevent players from leaving the play area.
-  - **Control Mapping**: 
-    - **P1**: Re-mapped to WASD + Space.
-    - **P2**: Re-mapped to Arrow Keys + Enter.
-  - **Physics**: Utilized existing `PLAYER_SPEED` constant for consistent movement velocity across all 4 axes.
-
-## [1.0.25] - 2026-04-18
-### Boss 'Wall Dash' Attack Pattern
-- **Objective**: Introduce a high-speed horizontal traversal attack to pressure player positioning.
-- **Detailed Technical Changes**:
-  - **Attack States**: Added `DASH_PREP` and `DASHING` states to the Boss AI.
-  - **Execution Logic**: 
-    - In `DASH_PREP`, the boss repositioned to `x = -width` or `x = canvas.width` and a random vertical coordinate between 100px and `canvas.height - 200px`.
-    - In `DASHING`, horizontal velocity is set to `15 * dashDir` (approx. 900px/sec).
-  - **Collision Engine**: Implemented an AABB check specifically during the `DASHING` state that flags any overlapping players as `alive = false`.
-  - **State Reset**: Added boundary checks (`this.x > canvas.width` or `this.x < -this.width`) to trigger a return to the `IDLE` central state.
-
-## [1.0.26] - 2026-04-18
-### Laser Freeze & Performance Optimization
-- **Objective**: Resolve game-breaking freezes occurring during intense laser fire and round transitions.
-- **Detailed Technical Changes**:
-  - **Memory Optimization**: Implemented a global cap on `fireworks` particles (clamped at 300). Reduced particle generation density per explosion from 50 to 15 to prevent CPU spiking during laser multi-hits.
-  - **Logic Fix**: Restored `ownerId` assignment to laser bullets in `Player.update()`. This fixes an `undefined` reference crash in the collision engine when calculating laser damage levels.
-  - **Robust Collision**: Refactored the Bullet-Invader collision loop to be 'Collection Safe'. Used a `Set` (`invadersToRemove`) to batch removals after iteration, preventing array modification errors during high-frequency laser overlaps.
-  - **Audio Safety**: Added a `Math.max(500, ...)` clamp to the `winLoopTimeout` in `SoundEffects` to prevent recursive execution if the audio context clock fluctuates.
-
-## [1.0.27] - 2026-04-18
-### 4-Player Local Co-op & Character Specific Weapons
-- **Objective**: Expand the game to support 4 players simultaneously with distinct character identities and weaponry.
-- **Detailed Technical Changes**:
-  - **Player Roster**:
-    - **P1 (Mario)**: WASD + Space. Custom sprite drawing. Shoots rotating Hammers.
-    - **P2 (Kirby)**: Arrows + Enter. Custom arc-based drawing. Shoots spinning Stars.
-    - **P3 (Luigi)**: IJKL + U. Green-variant Mario sprite. Shoots rotating Hammers.
-    - **P4 (Meta Knight)**: TFGH + R. Masked/Winged sprite. Shoots Sword projectiles.
-  - **Rendering Engine**:
-    - Updated `Player.draw()` with multi-path logic for character-specific pixel art (using arc, rect, and paths).
-    - Refactored `Bullet.draw()` to use `ownerId` to determine projectile geometry (rotating hammers, star points, sword blades).
-  - **UI/UX**:
-    - Added `4P` mode button to `index.html`.
-    - Dynamic HUD scaling to show/hide P3 and P4 stats based on `playerMode`.
-    - Updated control hints to display all 4 sets of mappings.
-
-## [1.0.28] - 2026-04-18
-### Character Role Correction (P1 Kirby)
-- **Objective**: Re-align character assignments so Kirby is P1 and Mario is P2.
-- **Detailed Technical Changes**:
-  - **Identity Swap**: Swapped default names and labels in `index.html` (P1: Kirby, P2: Mario).
-  - **Drawing Logic**: Updated `Player.draw()` to associate `ID 1` with the pink round sprite (Kirby) and `ID 2` with the red plumber sprite (Mario).
-  - **Weapon Mapping**: 
-    - `ownerId 1` (Kirby) now triggers the Star projectile geometry.
-    - `ownerId 2` and `3` (Mario/Luigi) trigger the Hammer projectile geometry.
