@@ -550,3 +550,65 @@ button {
     opacity: 0.8;
 }
 
+
+/* PVP Mode Styles */
+#pvp-unlock-btn {
+    position: absolute;
+    bottom: 10px;
+    left: 10px;
+    width: 30px;
+    height: 30px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.2);
+    font-family: var(--font-main);
+    font-size: 10px;
+    cursor: pointer;
+    z-index: 1000;
+    transition: all 0.3s;
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#pvp-unlock-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.1);
+}
+
+#pvp-unlock-btn.unlocked {
+    background: rgba(58, 134, 255, 0.2);
+    border-color: var(--accent-blue);
+    color: var(--soft-blue);
+    opacity: 0.8;
+}
+
+#pvp-match-info p {
+    font-size: 12px;
+    color: var(--accent-gold);
+    margin-bottom: 20px;
+    text-align: center;
+}
+
+#pvp-score-board {
+    margin-top: 20px;
+    text-align: center;
+    border-top: 2px dashed var(--accent-blue);
+    padding-top: 10px;
+}
+
+#pvp-score-board p {
+    font-size: 12px;
+    margin: 5px 0;
+}
+
+#pvp-status {
+    animation: pulse 1s infinite alternate;
+}
+
+@keyframes pulse {
+    from { opacity: 0.6; }
+    to { opacity: 1; }
+}

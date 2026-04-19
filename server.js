@@ -2,6 +2,8 @@ const express = require('express');
 const Database = require('better-sqlite3');
 const path = require('path');
 const cors = require('cors');
+const http = require('http');
+const { Server } = require('socket.io');
 const config = require('./config');
 
 const app = express();
@@ -51,8 +53,66 @@ app.post('/api/scores', (req, res) => {
   }
 });
 
+const server = http.createServer(app);
+const io = new Server(server, {
+  cors: {
+    origin: "*",
+    methods: ["GET", "POST"]
+  }
+});
+
+// PVP Matchmaking
+let waitingPlayer = null;
+io.on('connection', (socket) => {
+  console.log('User connected:', socket.id);
+
+  socket.on('join_pvp', (data) => {
+    if (waitingPlayer && waitingPlayer.id !== socket.id) {
+      const opponent = waitingPlayer;
+      waitingPlayer = null;
+      
+      const roomId = `room_${socket.id}_${opponent.id}`;
+      socket.join(roomId);
+      opponent.socket.join(roomId);
+      
+      io.to(roomId).emit('match_found', {
+        roomId,
+        players: [
+          { id: socket.id, name: data.name, side: 'left' },
+          { id: opponent.id, name: opponent.name, side: 'right' }
+        ]
+      });
+    } else {
+      waitingPlayer = { id: socket.id, name: data.name, socket: socket };
+      socket.emit('waiting');
+    }
+  });
+
+  socket.on('select_card', (data) => {
+    socket.to(data.roomId).emit('opponent_selected', { card: data.card });
+  });
+
+  socket.on('update_state', (data) => {
+    socket.to(data.roomId).emit('opponent_state', data.state);
+  });
+
+  socket.on('shoot', (data) => {
+    socket.to(data.roomId).emit('opponent_shoot', data.bullet);
+  });
+
+  socket.on('hit', (data) => {
+    socket.to(data.roomId).emit('opponent_hit', data);
+  });
+
+  socket.on('disconnect', () => {
+    if (waitingPlayer && waitingPlayer.id === socket.id) {
+      waitingPlayer = null;
+    }
+  });
+});
+
 if (require.main === module) {
-  app.listen(config.port, () => {
+  server.listen(config.port, () => {
     console.log(`Server running at http://${config.hostname}:${config.port}`);
   });
 }

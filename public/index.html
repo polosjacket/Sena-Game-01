@@ -8,6 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
+    <script src="/socket.io/socket.io.js"></script>
 </head>
 <body>
     <div id="crt-overlay"></div>
@@ -118,7 +119,18 @@
                             <h3>FREEZE</h3>
                             <p>Freeze enemy in front</p>
                             <span class="level-info">10% CHANCE</span>
-                        </div>
+                </div>
+                <div id="pvp-overlay" class="overlay">
+                    <h2 id="pvp-status">MATCHMAKING...</h2>
+                    <div id="pvp-match-info" class="hidden">
+                        <p id="pvp-players-names"></p>
+                    </div>
+                    <div id="pvp-cards-container" class="cards-container hidden">
+                        <!-- Card options will be injected here -->
+                    </div>
+                    <div id="pvp-score-board" class="hidden">
+                        <p>SCORE: <span id="pvp-score-p1">0</span> - <span id="pvp-score-p2">0</span></p>
+                        <p>ROUND: <span id="pvp-current-round">1</span> / 5</p>
                     </div>
                 </div>
             </div>
@@ -180,6 +192,7 @@
                 <button id="quit-btn" class="action-btn secondary-btn">QUIT</button>
             </div>
         </div>
+        <button id="pvp-unlock-btn" title="PVP Mode">?</button>
     </div>
 
     <script src="game.js"></script>

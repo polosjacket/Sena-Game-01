@@ -482,6 +482,13 @@ class Player {
             playerBullets.push(b);
             sfx.playShootPlayer();
             this.cooldown = Math.max(1, 30 - (this.upgrades.rapid * 3));
+            
+            if (pvp.state === 'FIGHTING' && !this.isRemote) {
+                pvp.socket.emit('shoot', {
+                    roomId: pvp.roomId,
+                    bullet: { x: this.x + this.width / 2 - 2, y: this.y, speed: -7 }
+                });
+            }
         }
 
         if (this.cooldown > 0) this.cooldown--;
@@ -1036,9 +1043,240 @@ class Bullet {
             this.life--;
         } else {
             this.y += this.speed;
+            }
+        }
+        ctx.restore();
+    }
+
+    update() {
+        if (this.type === 'laser') {
+            this.life--;
+        } else {
+            this.y += this.speed;
         }
     }
 }
+
+class PVPManager {
+    constructor() {
+        this.socket = null;
+        this.roomId = null;
+        this.myId = null;
+        this.opponent = null;
+        this.active = false;
+        this.state = 'IDLE'; // IDLE, WAITING, MATCHED, CARDS, FIGHTING, RESULTS
+        this.myCard = null;
+        this.opponentCard = null;
+        this.score = { me: 0, opponent: 0 };
+        this.round = 1;
+        this.unlocked = localStorage.getItem('pvp_unlocked') === 'true';
+        this.matchmakingTimeout = null;
+    }
+
+    init() {
+        const btn = document.getElementById('pvp-unlock-btn');
+        if (this.unlocked) {
+            btn.classList.add('unlocked');
+            btn.textContent = 'PVP';
+        }
+
+        btn.onclick = () => {
+            if (!this.unlocked) {
+                this.unlocked = true;
+                localStorage.setItem('pvp_unlocked', 'true');
+                btn.classList.add('unlocked');
+                btn.textContent = 'PVP';
+                sfx.playPowerUp();
+                return;
+            }
+            this.startMatchmaking();
+        };
+    }
+
+    startMatchmaking() {
+        if (this.state !== 'IDLE') return;
+        this.active = true;
+        this.state = 'WAITING';
+        this.score = { me: 0, opponent: 0 };
+        this.round = 1;
+        
+        document.getElementById('pvp-overlay').classList.add('active');
+        document.getElementById('pvp-status').textContent = 'MATCHMAKING...';
+        document.getElementById('pvp-match-info').classList.add('hidden');
+        document.getElementById('pvp-cards-container').classList.add('hidden');
+        document.getElementById('pvp-score-board').classList.add('hidden');
+
+        if (!this.socket) {
+            if (typeof io === 'undefined') {
+                document.getElementById('pvp-status').textContent = 'SERVER ERROR';
+                return;
+            }
+            this.socket = io();
+            this.setupSocketListeners();
+        }
+
+        const name = players[0] ? players[0].name : (document.getElementById('player1-name').value || 'PILOT');
+        this.socket.emit('join_pvp', { name });
+    }
+
+    setupSocketListeners() {
+        this.socket.on('waiting', () => {
+            document.getElementById('pvp-status').textContent = 'SEARCHING FOR OPPONENT...';
+        });
+
+        this.socket.on('match_found', (data) => {
+            this.roomId = data.roomId;
+            this.myId = this.socket.id;
+            this.opponent = data.players.find(p => p.id !== this.myId);
+            this.state = 'MATCHED';
+            
+            document.getElementById('pvp-status').textContent = 'MATCH FOUND!';
+            document.getElementById('pvp-players-names').textContent = `${players[0].name} VS ${this.opponent.name}`;
+            document.getElementById('pvp-match-info').classList.remove('hidden');
+
+            setTimeout(() => this.showCardSelection(), 2000);
+        });
+
+        this.socket.on('opponent_selected', (data) => {
+            this.opponentCard = data.card;
+            if (this.myCard) this.startRound();
+        });
+
+        this.socket.on('opponent_state', (state) => {
+            if (this.state === 'FIGHTING' && window.remotePlayer) {
+                window.remotePlayer.x = state.x;
+                window.remotePlayer.y = state.y;
+            }
+        });
+
+        this.socket.on('opponent_shoot', (bullet) => {
+            if (this.state === 'FIGHTING') {
+                const b = new Bullet(bullet.x, bullet.y, '#ff006e', 5, 'opponent');
+                invaderBullets.push(b);
+                sfx.playShootEnemy();
+            }
+        });
+
+        this.socket.on('opponent_hit', () => {
+            this.winRound();
+        });
+
+        this.socket.on('disconnect', () => {
+            if (this.state === 'FIGHTING') {
+                this.endPVP('OPPONENT LEFT');
+            }
+        });
+    }
+
+    showCardSelection() {
+        this.state = 'CARDS';
+        this.myCard = null;
+        this.opponentCard = null;
+        
+        document.getElementById('pvp-status').textContent = 'CHOOSE YOUR CARD';
+        const container = document.getElementById('pvp-cards-container');
+        container.innerHTML = '';
+        container.classList.remove('hidden');
+
+        const pvpCards = [
+            { id: 'tank', name: 'TANK', desc: '+2 LIVES', buff: { hp: 2 } },
+            { id: 'scout', name: 'SCOUT', desc: '+50% SPEED', buff: { speed: 2 } },
+            { id: 'glass', name: 'GLASS CANNON', desc: 'INSTANT SHOOT', buff: { rapid: 10 } }
+        ];
+
+        pvpCards.forEach(cardData => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            card.innerHTML = `<h3>${cardData.name}</h3><p>${cardData.desc}</p>`;
+            card.onclick = () => {
+                this.myCard = cardData;
+                this.socket.emit('select_card', { roomId: this.roomId, card: cardData });
+                container.classList.add('hidden');
+                document.getElementById('pvp-status').textContent = 'WAITING FOR OPPONENT...';
+                sfx.playPowerUp();
+                if (this.opponentCard) this.startRound();
+            };
+            container.appendChild(card);
+        });
+    }
+
+    startRound() {
+        this.state = 'FIGHTING';
+        document.getElementById('pvp-overlay').classList.remove('active');
+        document.getElementById('pvp-score-board').classList.remove('hidden');
+        this.updateScoreUI();
+
+        // Initialize players for PVP
+        if (players.length === 0) startGame();
+        
+        // My player is players[0]
+        const myP = players[0];
+        myP.x = canvas.width * 0.2;
+        myP.y = canvas.height - 40;
+        myP.alive = true;
+        myP.invincible = 120;
+
+        // Apply Card Buffs
+        if (this.myCard.id === 'tank') totalLives += 2;
+        if (this.myCard.id === 'scout') myP.upgrades.speed += 3;
+        if (this.myCard.id === 'glass') myP.upgrades.rapid = 10;
+
+        // Remote Player
+        window.remotePlayer = new Player(2, this.opponent.name, canvas.width * 0.8, canvas.height - 40, '#ff006e', {});
+        window.remotePlayer.isRemote = true;
+        
+        invaders = []; // Clear invaders for PVP
+        boss = null;
+        gameState = 'PLAYING';
+    }
+
+    updateScoreUI() {
+        document.getElementById('pvp-score-p1').textContent = this.score.me;
+        document.getElementById('pvp-score-p2').textContent = this.score.opponent;
+        document.getElementById('pvp-current-round').textContent = this.round;
+    }
+
+    winRound() {
+        this.score.me++;
+        this.nextRound();
+    }
+
+    loseRound() {
+        this.score.opponent++;
+        this.nextRound();
+    }
+
+    nextRound() {
+        if (this.score.me >= 5 || this.score.opponent >= 5) {
+            this.endPVP(this.score.me >= 5 ? 'YOU WIN!' : 'YOU LOSE!');
+            return;
+        }
+        this.round++;
+        this.state = 'MATCHED';
+        document.getElementById('pvp-overlay').classList.add('active');
+        document.getElementById('pvp-status').textContent = `ROUND ${this.round}`;
+        document.getElementById('pvp-score-board').classList.add('hidden');
+        setTimeout(() => this.showCardSelection(), 2000);
+    }
+
+    endPVP(result) {
+        this.state = 'IDLE';
+        this.active = false;
+        document.getElementById('pvp-overlay').classList.add('active');
+        document.getElementById('pvp-status').textContent = result;
+        document.getElementById('pvp-match-info').classList.add('hidden');
+        document.getElementById('pvp-cards-container').classList.add('hidden');
+        document.getElementById('pvp-score-board').classList.add('hidden');
+        
+        setTimeout(() => {
+            document.getElementById('pvp-overlay').classList.remove('active');
+            endGame();
+        }, 3000);
+    }
+}
+
+const pvp = new PVPManager();
+pvp.init();
 
 // Game Functions
 function initInvaders() {
@@ -1172,7 +1410,22 @@ function gameLoop() {
     players.forEach(p => {
         p.update();
         p.draw();
+        
+        if (pvp.state === 'FIGHTING') {
+            // Send position to opponent
+            pvp.socket.emit('update_state', {
+                roomId: pvp.roomId,
+                state: { x: p.x, y: p.y }
+            });
+            
+            // Hook shooting in Player.update to emit 'shoot'
+            // I'll modify Player class later
+        }
     });
+
+    if (pvp.state === 'FIGHTING' && window.remotePlayer) {
+        window.remotePlayer.draw();
+    }
 
     // Update HUD
     document.getElementById('p1-score').textContent = players[0].score;
@@ -1529,7 +1782,12 @@ function damagePlayer(p) {
     
     if (totalLives <= 0) {
         p.alive = false;
-        endGame();
+        if (pvp.state === 'FIGHTING') {
+            pvp.socket.emit('hit', { roomId: pvp.roomId });
+            pvp.loseRound();
+        } else {
+            endGame();
+        }
     } else {
         p.invincible = 120; // 2 seconds of invincibility
         sfx.playExplosion();
