@@ -1067,15 +1067,30 @@ function initInvaders() {
     const startX = (canvas.width - (cols * (INVADER_SIZE + padding))) / 2;
 
     const invaderHp = 1 + Math.floor((level - 1) / 5);
+    
+    let targetAxemen = 0;
+    if (level > 5) {
+        targetAxemen = Math.floor(Math.random() * 4) + 3; // 3, 4, 5, or 6
+    }
+    
+    const totalInvaders = rows * cols;
+    const indices = Array.from({length: totalInvaders}, (_, i) => i);
+    const shuffledIndices = indices.sort(() => 0.5 - Math.random());
+    const axemenIndices = new Set(shuffledIndices.slice(0, targetAxemen));
+
+    let currentIndex = 0;
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
             let type = 'normal';
-            if (level >= 3 && Math.random() < Math.min(0.1 + (level * 0.02), 0.5)) {
-                type = 'swordsman';
-            } else if (level >= 1 && Math.random() < 0.9) {
+            
+            if (axemenIndices.has(currentIndex)) {
                 type = 'axeman';
+            } else if (level >= 3 && Math.random() < Math.min(0.1 + (level * 0.02), 0.5)) {
+                type = 'swordsman';
             }
+            
             invaders.push(new Invader(startX + c * (INVADER_SIZE + padding), 50 + r * (INVADER_SIZE + padding), speed, invaderHp, type));
+            currentIndex++;
         }
     }
 }
@@ -1189,7 +1204,7 @@ function gameLoop() {
         }
 
         // Randomly shoot
-        if (Math.random() < 0.05 * (difficulty === 'hard' ? 3 : difficulty === 'medium' ? 2 : 1)) {
+        if (Math.random() < 0.001 * (difficulty === 'hard' ? 3 : difficulty === 'medium' ? 2 : 1)) {
             sfx.playShootEnemy();
             if (inv.type === 'swordsman') {
                 // Find a random alive player as target
