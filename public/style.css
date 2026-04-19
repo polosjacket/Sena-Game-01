@@ -460,6 +460,16 @@ button {
     margin: 20px 0;
 }
 
+.hud-lives {
+    margin: 0;
+    gap: 10px;
+}
+
+.hud-lives .heart {
+    font-size: 20px;
+}
+
+
 .heart {
     font-size: 32px;
     filter: drop-shadow(0 0 5px rgba(255, 0, 110, 0.5));

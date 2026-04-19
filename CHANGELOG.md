@@ -5,13 +5,18 @@ All notable changes to this project will be documented in this file. This projec
 ---
 
 ## [1.0.43] - 2026-04-19
-### Game Over UI Polish
-- **Objective**: Refine the Game Over screen flow when players run out of lives.
+### True 3-Heart Health System
+- **Objective**: Replace the instant-death and heart-drop revival mechanics with a traditional shared health pool to improve pacing and fairness.
 - **Detailed Technical Changes**:
-  - **Button Visibility**: 
-    - The "RE-DEPLOY" button now completely disappears when `totalLives` reaches 0, forcing players to acknowledge the "QUIT" action.
-  - **Menu Navigation**:
-    - Fixed a bug where the "QUIT" button on the Game Over screen did not properly close the overlay or reset the global lives counter.
+  - **Health Mechanics**:
+    - The team now shares a pool of **3 Hearts** that acts as HP during active gameplay.
+    - Getting hit by any enemy or projectile deducts 1 heart instead of causing instant death.
+    - Added a 2-second invincibility frame (`p.invincible = 120`) after taking damage to prevent multi-hit unfairness.
+    - The game ends immediately when all 3 hearts are lost.
+  - **UI & Cleanup**:
+    - Moved the heart display to the active HUD so players can track their health.
+    - Removed the heart drop/revival item system and the `Heart` class.
+    - Updated the "Mission Briefing" guide to reflect the new health system.
 
 ---
 

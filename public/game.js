@@ -439,34 +439,6 @@ class Player {
     }
 }
 
-class Heart {
-    constructor(x, y) {
-        this.x = x;
-        this.y = y;
-        this.width = 30;
-        this.height = 30;
-        this.timer = 600; // 10 seconds at 60fps
-    }
-
-    draw() {
-        ctx.fillStyle = '#ff0054';
-        // Simple heart pixel art
-        ctx.fillRect(this.x + 10, this.y, 10, 5);
-        ctx.fillRect(this.x + 5, this.y + 5, 20, 5);
-        ctx.fillRect(this.x, this.y + 10, 30, 10);
-        ctx.fillRect(this.x + 5, this.y + 20, 20, 5);
-        ctx.fillRect(this.x + 10, this.y + 25, 10, 5);
-        
-        // Draw timer bar
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(this.x, this.y - 10, (this.timer / 600) * this.width, 3);
-    }
-
-    update() {
-        this.timer--;
-        return this.timer > 0;
-    }
-}
 
 class Invader {
     constructor(x, y, speed, hp) {
@@ -657,8 +629,7 @@ class Boss {
             // Collision with players
             players.forEach(p => {
                 if (p.alive && p.invincible <= 0 && this.x < p.x + p.width && this.x + this.width > p.x && this.y < p.y + p.height && this.y + this.height > p.y) {
-                    p.alive = false;
-                    if (players.every(pl => !pl.alive)) endGame();
+                    damagePlayer(p);
                 }
             });
 
@@ -680,8 +651,7 @@ class Boss {
             this.warningAreas.forEach(area => {
                 players.forEach(p => {
                     if (p.alive && p.invincible <= 0 && p.x < area.x + area.w && p.x + p.width > area.x) {
-                        p.alive = false;
-                        if (players.every(pl => !pl.alive)) endGame();
+                        damagePlayer(p);
                     }
                 });
             });
@@ -702,16 +672,14 @@ class Boss {
             const safeW = 200;
             players.forEach(p => {
                 if (p.alive && p.invincible <= 0 && (p.x < safeX || p.x + p.width > safeX + safeW)) {
-                    p.alive = false;
-                    if (players.every(pl => !pl.alive)) endGame();
+                    damagePlayer(p);
                 }
             });
         } else if (this.attackState === 'LASER') {
             this.slamTimer++;
             players.forEach(p => {
                 if (p.alive && p.invincible <= 0 && p.x < this.x + this.width/2 + 20 && p.x + p.width > this.x + this.width/2 - 20) {
-                    p.alive = false;
-                    if (players.every(pl => !pl.alive)) endGame();
+                    damagePlayer(p);
                 }
             });
             if (this.slamTimer > 60) {
@@ -1030,47 +998,14 @@ function gameLoop() {
         players.forEach(p => {
             if (p.alive && p.invincible <= 0) {
                 if (b.x < p.x + p.width && b.x + b.width > p.x && b.y < p.y + p.height && b.y + b.height > p.y) {
-                    p.alive = false;
+                    damagePlayer(p);
                     invaderBullets.splice(bIdx, 1);
-                    
-                    // Only end game if all players dead
-                    if (players.every(pl => !pl.alive)) {
-                        endGame();
-                    }
                 }
             }
         });
     });
 
-    // Update & Draw Heart
-    if (players.some(p => !p.alive) && !heart && !heartSpawnedInRound) {
-        if (Math.random() < 0.01) { // Increased spawn chance
-            heart = new Heart(Math.random() * (canvas.width - 30), canvas.height - 60);
-        }
-    }
 
-    if (heart) {
-        heart.draw();
-        if (!heart.update()) {
-            heart = null;
-            heartSpawnedInRound = true; // Wait for next round
-        } else {
-            // Check collision with living players
-            players.forEach(p => {
-                if (p.alive && heart && p.x < heart.x + heart.width && p.x + p.width > heart.x && p.y < heart.y + heart.height && p.y + p.height > heart.y) {
-                    const deadPlayer = players.find(pl => !pl.alive);
-                    if (deadPlayer) {
-                        deadPlayer.alive = true;
-                        deadPlayer.invincible = 300; // 5 seconds
-                        deadPlayer.x = p.x; // Spawn near teammate
-                        deadPlayer.y = p.y;
-                    }
-                    heart = null;
-                    heartSpawnedInRound = true;
-                }
-            });
-        }
-    }
 
     // Update & Draw Fireworks
     fireworks.forEach((p, index) => {
@@ -1170,8 +1105,22 @@ function updateLivesUI() {
     }
 }
 
-function endGame() {
+function damagePlayer(p) {
+    if (!p.alive || p.invincible > 0) return;
+    
     totalLives--;
+    updateLivesUI();
+    
+    if (totalLives <= 0) {
+        p.alive = false;
+        endGame();
+    } else {
+        p.invincible = 120; // 2 seconds of invincibility
+        sfx.playPlayerHit(); // Plays explosion sound as fallback if hit sound is not added
+    }
+}
+
+function endGame() {
     gameState = 'GAME_OVER';
     cancelAnimationFrame(animationId);
     sfx.playLoseJingle();
@@ -1181,12 +1130,7 @@ function endGame() {
 
     updateLivesUI();
     const restartBtn = document.getElementById('restart-btn');
-    if (totalLives > 0) {
-        restartBtn.style.display = 'inline-block';
-        restartBtn.textContent = 'RE-DEPLOY';
-    } else {
-        restartBtn.style.display = 'none';
-    }
+    restartBtn.textContent = 'RETRY FROM START';
 
     document.getElementById('final-p1-name').textContent = players[0].name;
 
@@ -1256,16 +1200,12 @@ function togglePause() {
 function quitToMenu() {
     gameState = 'SETUP';
     cancelAnimationFrame(animationId);
-    totalLives = 3; // Reset lives for next mission
-    level = 1;
     document.getElementById('game-screen').classList.remove('active');
-    document.getElementById('game-over-screen').classList.remove('active');
     document.getElementById('pause-overlay').classList.remove('active');
     document.getElementById('setup-screen').classList.add('active');
     document.getElementById('mobile-controls').classList.remove('active');
     loadScores();
 }
-
 
 
 // Safe Listener Attachment
@@ -1302,22 +1242,10 @@ function initUIListeners() {
         if (totalLives > 0) {
             // Re-deploy at current level
             document.getElementById('game-over-screen').classList.remove('active');
-            
-            players.forEach(p => {
-                p.alive = true;
-                p.invincible = 300; // 5 seconds of invincibility
-                p.cooldown = 0;
-            });
-            playerBullets = [];
-            invaderBullets = [];
-            heart = null;
-            heartSpawnedInRound = false;
-            
             initInvaders();
             gameState = 'PLAYING';
             sfx.playBGM();
         } else {
-
             // Full restart
             totalLives = 3;
             level = 1;
@@ -1328,8 +1256,6 @@ function initUIListeners() {
     });
 
     safeAddListener('quit-btn', 'click', quitToMenu);
-    safeAddListener('quit-btn-go', 'click', quitToMenu);
-
 
 
     document.querySelectorAll('.diff-btn').forEach(btn => {
