@@ -299,7 +299,8 @@ class Player {
             explosion: 0.1, // Chance of area-of-effect damage
             laser: 0.1, // Enables laser ability (Double Tap)
             laserLvl: 1, // Damage multiplier for lasers
-            freeze: 0 // Chance of freezing enemies in place
+            freeze: 0, // Chance of freezing enemies in place
+            speed: PLAYER_SPEED // Ship movement speed
         };
 
         // Laser mechanics
@@ -394,12 +395,12 @@ class Player {
         
         if (this.invincible > 0) this.invincible--;
 
-        if ((keys[this.keys.left] || (this.id === 1 && touchState.left)) && this.x > 0) this.x -= PLAYER_SPEED;
-        if ((keys[this.keys.right] || (this.id === 1 && touchState.right)) && this.x < canvas.width - this.width) this.x += PLAYER_SPEED;
+        if ((keys[this.keys.left] || (this.id === 1 && touchState.left)) && this.x > 0) this.x -= this.upgrades.speed;
+        if ((keys[this.keys.right] || (this.id === 1 && touchState.right)) && this.x < canvas.width - this.width) this.x += this.upgrades.speed;
 
         // Forward movement (Space)
         if (this.id === 1 && keys['Space'] && this.y > 50) {
-            this.y -= PLAYER_SPEED;
+            this.y -= this.upgrades.speed;
         } else if (this.y < canvas.height - 40) {
             this.y += 2; // Automatic drift back to baseline
         }
@@ -1140,6 +1141,10 @@ function updateUpgradeOverlay() {
     cards[1].querySelector('.level-info').textContent = `${Math.round(player.upgrades.explosion * 100)}% CHANCE`;
     cards[2].querySelector('.level-info').textContent = `LVL ${player.upgrades.laserLvl}/10 (${Math.round(player.upgrades.laser * 100)}% CHANCE)`;
     cards[3].querySelector('.level-info').textContent = `${Math.round(player.upgrades.freeze * 100)}% CHANCE`;
+    
+    // Speed card is cards[4] (index 4) if it's the 5th card
+    const speedCard = document.querySelector('.card.speed');
+    if (speedCard) speedCard.querySelector('.level-info').textContent = `SPD ${Math.round(player.upgrades.speed)}`;
 }
 
 function selectUpgrade(type) {
@@ -1157,6 +1162,8 @@ function selectUpgrade(type) {
         if (player.upgrades.laser < 0.5) player.upgrades.laser += 0.1;
     } else if (type === 'freeze' && player.upgrades.freeze < 0.5) {
         player.upgrades.freeze += 0.1;
+    } else if (type === 'speed') {
+        player.upgrades.speed += 1;
     }
 
     if (playerMode === 2 && currentUpgradingPlayer === 0) {

@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.45] - 2026-04-19
+### Speed Upgrade Card
+- **Objective**: Provide players with the ability to increase their ship's movement speed to better dodge aggressive attacks (like the new homing swords).
+- **Detailed Technical Changes**:
+  - **Player Mechanics**: Replaced the constant `PLAYER_SPEED` with a dynamic `speed` property within the player's `upgrades` object (defaulting to 5).
+  - **Upgrade Screen**: Added a new "THRUST" card to the upgrade screen that increments the player's speed by 1 when selected.
+  - **UI/UX**: Updated the `.cards-container` to use `flex-wrap` so the additional card fits nicely on smaller screens or when the freeze card is also present.
+
+---
+
+
 ## [1.0.44] - 2026-04-19
 ### Homing Swordsman Enemy
 - **Objective**: Introduce a new highly aggressive enemy type that forces players to keep moving.
