@@ -1302,10 +1302,22 @@ function initUIListeners() {
         if (totalLives > 0) {
             // Re-deploy at current level
             document.getElementById('game-over-screen').classList.remove('active');
+            
+            players.forEach(p => {
+                p.alive = true;
+                p.invincible = 300; // 5 seconds of invincibility
+                p.cooldown = 0;
+            });
+            playerBullets = [];
+            invaderBullets = [];
+            heart = null;
+            heartSpawnedInRound = false;
+            
             initInvaders();
             gameState = 'PLAYING';
             sfx.playBGM();
         } else {
+
             // Full restart
             totalLives = 3;
             level = 1;
