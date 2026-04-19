@@ -389,6 +389,14 @@ class Player {
         if ((keys[this.keys.left] || (this.id === 1 && touchState.left)) && this.x > 0) this.x -= PLAYER_SPEED;
         if ((keys[this.keys.right] || (this.id === 1 && touchState.right)) && this.x < canvas.width - this.width) this.x += PLAYER_SPEED;
 
+        // Forward movement (Space)
+        if (this.id === 1 && keys['Space'] && this.y > 50) {
+            this.y -= PLAYER_SPEED;
+        } else if (this.y < canvas.height - 40) {
+            this.y += 2; // Automatic drift back to baseline
+        }
+
+
 
 
         if ((keys[this.keys.shoot] || (this.id === 1 && touchState.shoot)) && this.cooldown <= 0) {

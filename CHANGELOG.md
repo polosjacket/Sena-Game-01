@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.38] - 2026-04-19
+### Forward Movement Mechanic
+- **Objective**: Introduce a new vertical movement layer to enhance dodging and offensive positioning.
+- **Detailed Technical Changes**:
+  - **Player Movement**:
+    - Added "Forward Thrust" for Player 1 using the `Space` key.
+    - Implemented an automatic drift-back system that slowly returns the player to the baseline when `Space` is released.
+    - This allows for temporary vertical repositioning while maintaining the core horizontal focus of the game.
+
+---
+
+
 ## [1.0.37] - 2026-04-19
 ### Laser Cooldown Optimization
 - **Objective**: Improve gameplay fluidity by removing the excessive delay after firing a laser.
