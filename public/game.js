@@ -200,6 +200,11 @@ const ctx = canvas.getContext('2d');
 canvas.width = 800;
 canvas.height = 500;
 
+// Mobile Detection
+const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
+const touchState = { left: false, right: false, shoot: false };
+
+
 // Game State
 let gameState = 'SETUP';
 let difficulty = 'low';
@@ -381,11 +386,13 @@ class Player {
         
         if (this.invincible > 0) this.invincible--;
 
-        if (keys[this.keys.left] && this.x > 0) this.x -= PLAYER_SPEED;
-        if (keys[this.keys.right] && this.x < canvas.width - this.width) this.x += PLAYER_SPEED;
+        if ((keys[this.keys.left] || (this.id === 1 && touchState.left)) && this.x > 0) this.x -= PLAYER_SPEED;
+        if ((keys[this.keys.right] || (this.id === 1 && touchState.right)) && this.x < canvas.width - this.width) this.x += PLAYER_SPEED;
 
 
-        if (keys[this.keys.shoot] && this.cooldown <= 0) {
+
+        if ((keys[this.keys.shoot] || (this.id === 1 && touchState.shoot)) && this.cooldown <= 0) {
+
             const isLaser = Math.random() < this.upgrades.laser;
             sfx.playShootPlayer();
             if (isLaser) {
@@ -784,16 +791,13 @@ function startGame() {
             left: 'ArrowLeft', right: 'ArrowRight', shoot: 'ArrowUp' 
         }));
     }
-    if (playerMode >= 4) {
-        const p3Name = document.getElementById('player3-name').value || 'LUIGI';
-        const p4Name = document.getElementById('player4-name').value || 'META';
-        players.push(new Player(3, p3Name, canvas.width * 0.6, canvas.height - 40, '#81c784', { 
-            left: 'KeyJ', right: 'KeyL', shoot: 'KeyI' 
-        }));
-        players.push(new Player(4, p4Name, canvas.width * 0.8, canvas.height - 40, '#7986cb', { 
-            left: 'KeyF', right: 'KeyH', shoot: 'KeyT' 
-        }));
+
+    if (isMobile) {
+        document.getElementById('mobile-controls').classList.add('active');
+    } else {
+        document.getElementById('mobile-controls').classList.remove('active');
     }
+
 
 
     playerBullets = [];
@@ -1203,8 +1207,10 @@ function quitToMenu() {
     document.getElementById('game-screen').classList.remove('active');
     document.getElementById('pause-overlay').classList.remove('active');
     document.getElementById('setup-screen').classList.add('active');
+    document.getElementById('mobile-controls').classList.remove('active');
     loadScores();
 }
+
 
 // Safe Listener Attachment
 function safeAddListener(id, event, callback) {
@@ -1263,29 +1269,60 @@ function initUIListeners() {
     window.addEventListener('keydown', e => {
         if (e.code === 'KeyP') togglePause();
     });
+
+    // Mobile Touch Listeners
+    const addTouchEvents = (id, stateKey) => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('touchstart', (e) => {
+                e.preventDefault();
+                touchState[stateKey] = true;
+            });
+            el.addEventListener('touchend', (e) => {
+                e.preventDefault();
+                touchState[stateKey] = false;
+            });
+            el.addEventListener('touchcancel', (e) => {
+                e.preventDefault();
+                touchState[stateKey] = false;
+            });
+        }
+    };
+
+    addTouchEvents('touch-move-left', 'left');
+    addTouchEvents('touch-move-right', 'right');
+    addTouchEvents('touch-shoot', 'shoot');
 }
+
 
 function initPlayerMode() {
     const p2Input = document.getElementById('p2-input');
-    const p3Input = document.getElementById('p3-input');
-    const p4Input = document.getElementById('p4-input');
+    const btn2p = document.getElementById('btn-2p');
+    const mobileNote = document.getElementById('mobile-note');
     
-    // Hide all first
-    if (p2Input) p2Input.classList.add('hidden');
-    if (p3Input) p3Input.classList.add('hidden');
-    if (p4Input) p4Input.classList.add('hidden');
-    document.querySelectorAll('.p2-hud, .p3-hud, .p4-hud').forEach(h => h.classList.add('hidden'));
+    if (isMobile) {
+        playerMode = 1;
+        if (btn2p) btn2p.classList.add('hidden');
+        if (mobileNote) mobileNote.classList.remove('hidden');
+        // Force 1P button active
+        document.querySelectorAll('.mode-btn').forEach(b => {
+            b.classList.remove('active');
+            if (b.dataset.players === "1") b.classList.add('active');
+        });
+    } else {
+        if (btn2p) btn2p.classList.remove('hidden');
+        if (mobileNote) mobileNote.classList.add('hidden');
+    }
 
-    if (playerMode >= 2) {
+    if (p2Input) p2Input.classList.add('hidden');
+    document.querySelectorAll('.p2-hud').forEach(h => h.classList.add('hidden'));
+
+    if (playerMode === 2 && !isMobile) {
         if (p2Input) p2Input.classList.remove('hidden');
         document.querySelectorAll('.p2-hud').forEach(h => h.classList.remove('hidden'));
     }
-    if (playerMode >= 4) {
-        if (p3Input) p3Input.classList.remove('hidden');
-        if (p4Input) p4Input.classList.remove('hidden');
-        document.querySelectorAll('.p3-hud, .p4-hud').forEach(h => h.classList.remove('hidden'));
-    }
 }
+
 
 // Initial Load
 document.addEventListener('DOMContentLoaded', () => {

@@ -8,11 +8,12 @@ A polished, 4-player cooperative 8-bit arcade shooter. Zap the things, battle ma
 
 ## 🚀 Features
 
-- **4-Player Cooperative Multiplayer**: Play solo or with up to 3 friends (Mario, Kirby, Luigi, Meta Knight) in local co-op mode.
+- **1-2 Player Cooperative Multiplayer**: Play solo or with a friend (Mario or Kirby) in local co-op mode.
+- **Mobile Support**: Fully playable on mobile devices with intuitive touch controls (1 Player only).
 - **Procedural Sound Engine**: All audio (BGM and SFX) is generated procedurally using the Web Audio API—no external assets required!
 - **Upgrade System**: Choose between **Rapid Fire**, **Explosive Rounds**, and **Laser Beams** after every round to customize your hero.
 - **Epic Boss Fights**: Face a massive boss every 10 levels with scaling health and unique attack patterns.
-- **Cooperative Respawn**: Collect hearts to revive your fallen teammates with invincibility.
+- **Cooperative Respawn**: Collect hearts to revive your fallen teammate with invincibility.
 - **Continue System**: Never lose your progress! Continue your mission from the current level after a Game Over.
 - **High Score Tracking**: Persistent Top 3 leaderboard powered by SQLite.
 
@@ -44,24 +45,21 @@ A polished, 4-player cooperative 8-bit arcade shooter. Zap the things, battle ma
 4. **Play the game**:
    Open the URL displayed in your terminal (typically `http://localhost:3000`) in your browser.
 
-
 ## 🎮 Controls
 
-### Player 1 (Kirby)
+### Desktop
+#### Player 1 (Kirby)
 - **Move**: `A/D` (Horizontal Only)
 - **Shoot**: `W`
 
-### Player 2 (Mario)
+#### Player 2 (Mario)
 - **Move**: `Left/Right Arrows` (Horizontal Only)
 - **Shoot**: `Up Arrow`
 
-### Player 3 (Luigi)
-- **Move**: `J/L` (Horizontal Only)
-- **Shoot**: `I`
+### Mobile (1 Player Only)
+- **Move**: Left/Right buttons on the left side of the screen.
+- **Shoot**: Large "ZAP" button on the right side of the screen.
 
-### Player 4 (Meta Knight)
-- **Move**: `F/H` (Horizontal Only)
-- **Shoot**: `T`
 
 
 ### Global

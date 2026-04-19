@@ -4,6 +4,25 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.35] - 2026-04-19
+### Mobile Support & Max 2 Players
+- **Objective**: Expand platform support to mobile devices and optimize the game for a tighter, 2-player cooperative experience.
+- **Detailed Technical Changes**:
+  - **Player Limit**:
+    - Reduced maximum players from 4 to 2 across all game screens and logic.
+    - Simplified the setup screen by removing redundant 4P options and inputs.
+  - **Mobile Support**:
+    - Implemented a robust mobile detection engine (UA + Touch capabilities).
+    - Restricted mobile gameplay to 1 Player mode for optimal performance and UX.
+    - Added a mobile-specific note on the setup screen: "MOBILE: 1 PLAYER ONLY".
+    - Introduced touch-based virtual controls for mobile:
+      - Left-side touch zones for horizontal movement.
+      - Right-side oversized button for shooting ("ZAP").
+    - Enhanced responsive styling in `style.css` to handle smaller viewports and full-screen mobile layouts.
+
+---
+
+
 ## [1.0.34] - 2026-04-19
 ### Documentation Alignment
 - **Objective**: Ensure documentation accurately reflects the new dynamic infrastructure settings.

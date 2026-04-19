@@ -22,9 +22,9 @@
                 <p>PLAYERS:</p>
                 <div class="mode-options">
                     <button class="mode-btn" data-players="1">1P</button>
-                    <button class="mode-btn active" data-players="2">2P</button>
-                    <button class="mode-btn" data-players="4">4P</button>
+                    <button class="mode-btn active" data-players="2" id="btn-2p">2P</button>
                 </div>
+
             </div>
 
             <div id="player-inputs">
@@ -36,15 +36,8 @@
                     <label for="player2-name">MARIO (P2):</label>
                     <input type="text" id="player2-name" maxlength="10" value="MARIO">
                 </div>
-                <div class="input-group hidden" id="p3-input">
-                    <label for="player3-name">LUIGI (P3):</label>
-                    <input type="text" id="player3-name" maxlength="10" value="LUIGI">
-                </div>
-                <div class="input-group hidden" id="p4-input">
-                    <label for="player4-name">META (P4):</label>
-                    <input type="text" id="player4-name" maxlength="10" value="META KNIGHT">
-                </div>
             </div>
+
             
             <div class="difficulty-group">
                 <p>DIFFICULTY:</p>
@@ -55,7 +48,9 @@
                 </div>
             </div>
 
+            <div id="mobile-note" class="hidden">MOBILE: 1 PLAYER ONLY</div>
             <button id="start-btn">LAUNCH MISSION</button>
+
 
             <div id="high-score-board">
                 <h3>TOP GUNS</h3>
@@ -67,8 +62,7 @@
             <div id="hud">
                 <div class="stat">P1: <span id="p1-score">0</span></div>
                 <div class="stat p2-hud">P2: <span id="p2-score">0</span></div>
-                <div class="stat p3-hud hidden">P3: <span id="p3-score">0</span></div>
-                <div class="stat p4-hud hidden">P4: <span id="p4-score">0</span></div>
+
                 <div class="stat">LEVEL: <span id="level-display">1</span></div>
                 <div class="game-actions">
                     <button id="pause-btn" class="action-btn">PAUSE</button>
@@ -108,8 +102,14 @@
                 </div>
             </div>
             <div id="controls-hint">
-                P1: A/D+W | P2: ARROWS L/R+UP | P3: J/L+I | P4: F/H+T | P: PAUSE
+                P1: A/D+W | P2: ARROWS L/R+UP | P: PAUSE
             </div>
+            <div id="mobile-controls" class="hidden">
+                <div id="touch-move-left" class="touch-btn"><span>&lt;</span></div>
+                <div id="touch-move-right" class="touch-btn"><span>&gt;</span></div>
+                <div id="touch-shoot" class="touch-btn"><span>ZAP</span></div>
+            </div>
+
 
         </div>
 
