@@ -1149,8 +1149,8 @@ function gameLoop() {
         invaders = invaders.filter(inv => !invadersToRemove.has(inv));
     }
 
-    // Process Shockwaves
-    playerShockwaves = playerShockwaves.filter(sw => sw.x < canvas.width);
+    // Process Shockwaves (Ends halfway across the screen)
+    playerShockwaves = playerShockwaves.filter(sw => sw.x < canvas.width / 2);
     playerShockwaves.forEach(sw => {
         sw.update();
         sw.draw();
