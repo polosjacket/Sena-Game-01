@@ -1211,6 +1211,13 @@ function selectUpgrade(type) {
         updateUpgradeOverlay();
     } else {
         document.getElementById('upgrade-overlay').classList.remove('active');
+        
+        // Heal 1 heart upon completing the round
+        if (totalLives < 3) {
+            totalLives++;
+            updateLivesUI();
+        }
+
         level++;
         initInvaders();
         gameState = 'PLAYING';

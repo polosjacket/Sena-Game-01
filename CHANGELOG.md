@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.47] - 2026-04-19
+### Round Healing Mechanic
+- **Objective**: Reward players for surviving a wave by restoring lost health.
+- **Detailed Technical Changes**:
+  - **Health System**: Modified `selectUpgrade()` to increment `totalLives` by 1 at the end of every round, up to a maximum cap of 3.
+  - **UI**: Added a call to `updateLivesUI()` after the heal to ensure the HUD correctly re-renders the restored heart immediately before the next wave begins.
+
+---
+
+
 ## [1.0.46] - 2026-04-19
 ### Force Field Upgrade
 - **Objective**: Introduce an active defense mechanism that allows players to strategically block incoming damage.
