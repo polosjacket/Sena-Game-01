@@ -48,6 +48,7 @@ All notable changes to this project will be documented in this file. This projec
     - Created a new `HomingSword` class projectile.
     - When thrown, it actively calculates the angle to a random living player and tracks them for exactly 2 seconds.
     - After 2 seconds, the homing capability expires and the sword drops straight down.
+    - *Update*: Sword flight speed was slightly reduced (from 4 to 3) to give players a slightly larger window to react and dodge.
 
 ---
 

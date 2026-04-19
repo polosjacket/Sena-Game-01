@@ -484,7 +484,7 @@ class HomingSword {
         this.height = 30;
         this.target = target;
         this.timer = 120; // 2 seconds at 60fps
-        this.speed = 4;
+        this.speed = 3;
         this.angle = Math.PI / 2; // Point down initially
         this.type = 'sword';
     }
