@@ -446,6 +446,19 @@ button {
     background: rgba(0, 255, 255, 0.6);
 }
 
+#touch-shockwave {
+    background: rgba(255, 152, 0, 0.3);
+    border-color: #ff9800;
+    width: 80px;
+    height: 80px;
+    font-size: 12px;
+    margin-left: 10px;
+}
+
+#touch-shockwave:active {
+    background: rgba(255, 152, 0, 0.6);
+}
+
 #touch-move-left, #touch-move-right {
     margin-right: 10px;
 }

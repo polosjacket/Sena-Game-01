@@ -217,7 +217,7 @@ canvas.height = 500;
 
 // Mobile Detection
 const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window);
-const touchState = { left: false, right: false, shoot: false };
+const touchState = { left: false, right: false, shoot: false, shield: false, shockwave: false };
 
 
 // Game State
@@ -228,6 +228,7 @@ let players = [];
 let invaders = [];
 let boss = null;
 let playerBullets = [];
+let playerShockwaves = [];
 let invaderBullets = [];
 let level = 1;
 let animationId;
@@ -316,11 +317,13 @@ class Player {
             laserLvl: 1, // Damage multiplier for lasers
             freeze: 0, // Chance of freezing enemies in place
             speed: PLAYER_SPEED, // Ship movement speed
-            shield: 0 // Number of attacks the shield can block
+            shield: 0, // Number of attacks the shield can block
+            shockwave: 0 // Number of shockwaves you can fire
         };
 
         this.activeShields = 0;
         this.shieldCooldown = 0;
+        this.shockwaveCooldown = 0;
 
         // Laser mechanics
         this.laserCooldown = 0;
@@ -443,6 +446,16 @@ class Player {
             sfx.playPowerUp(); // Use an existing sound for activation
         }
 
+        // Shockwave Logic
+        if (this.shockwaveCooldown > 0) this.shockwaveCooldown--;
+
+        const isShockwaveDown = keys[this.keys.shockwave] || (this.id === 1 && touchState.shockwave);
+        if (isShockwaveDown && this.upgrades.shockwave > 0 && this.shockwaveCooldown <= 0) {
+            playerShockwaves.push(new Shockwave(this.id, this.upgrades.shockwave));
+            sfx.playExplosion(); 
+            this.shockwaveCooldown = 300; // 5 seconds cooldown
+        }
+
         if (this.laserCooldown > 0) this.laserCooldown--;
 
         const isShootDown = keys[this.keys.shoot] || (this.id === 1 && touchState.shoot);
@@ -475,6 +488,38 @@ class Player {
 
     }
 }
+
+class Shockwave {
+    constructor(ownerId, level) {
+        this.ownerId = ownerId;
+        this.level = level;
+        this.x = 0; // Starts at left
+        this.y = 0;
+        this.width = 20 + (level * 5); // Width scales with level
+        this.height = canvas.height; // Full screen height
+        this.speed = 10;
+        this.color = '#ff9800'; // Orange/Yellow wave
+    }
+
+    draw() {
+        ctx.save();
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = 0.7;
+        ctx.fillRect(this.x, this.y, this.width, this.height);
+        
+        // Add some glowing effect
+        ctx.shadowBlur = 20;
+        ctx.shadowColor = '#ffeb3b';
+        ctx.fillRect(this.x + 5, this.y, this.width - 10, this.height);
+        
+        ctx.restore();
+    }
+
+    update() {
+        this.x += this.speed;
+    }
+}
+
 
 
 class HomingSword {
@@ -907,12 +952,12 @@ function startGame() {
 
     players = [];
     players.push(new Player(1, p1Name, canvas.width * 0.2, canvas.height - 40, '#bde0fe', { 
-        left: 'KeyA', right: 'KeyD', shoot: 'KeyW', shield: 'KeyS'
+        left: 'KeyA', right: 'KeyD', shoot: 'KeyW', shield: 'KeyS', shockwave: 'KeyJ'
     }));
     
     if (playerMode >= 2) {
         players.push(new Player(2, p2Name, canvas.width * 0.4, canvas.height - 40, '#ffafcc', { 
-            left: 'ArrowLeft', right: 'ArrowRight', shoot: 'ArrowUp', shield: 'ArrowDown'
+            left: 'ArrowLeft', right: 'ArrowRight', shoot: 'ArrowUp', shield: 'ArrowDown', shockwave: 'Slash'
         }));
     }
 
@@ -925,6 +970,7 @@ function startGame() {
 
 
     playerBullets = [];
+    playerShockwaves = [];
     invaderBullets = [];
     level = 1;
     initInvaders();
@@ -1103,6 +1149,42 @@ function gameLoop() {
         invaders = invaders.filter(inv => !invadersToRemove.has(inv));
     }
 
+    // Process Shockwaves
+    playerShockwaves = playerShockwaves.filter(sw => sw.x < canvas.width);
+    playerShockwaves.forEach(sw => {
+        sw.update();
+        sw.draw();
+        
+        const player = players.find(p => p.id === sw.ownerId) || players[0];
+        
+        // Damage Boss
+        if (boss && sw.x < boss.x + boss.width && sw.x + sw.width > boss.x) {
+            boss.hp -= (5 + sw.level); 
+            sfx.playHitSFX();
+            if (boss.hp <= 0) {
+                player.score += 1000;
+                boss = null;
+            }
+        }
+        
+        // Destroy Invaders
+        invaders.forEach((inv, i) => {
+            if (!invadersToRemove.has(inv) && sw.x < inv.x + inv.width && sw.x + sw.width > inv.x) {
+                inv.hp -= (10 + sw.level * 2); // Massive damage
+                sfx.playHitSFX();
+                if (inv.hp <= 0) {
+                    invadersToRemove.add(inv);
+                    player.score += 100;
+                    createFirework(inv.x + inv.width / 2, inv.y + inv.height / 2);
+                }
+            }
+        });
+    });
+
+    if (invadersToRemove.size > 0) {
+        invaders = invaders.filter(inv => !invadersToRemove.has(inv));
+    }
+
     invaderBullets = invaderBullets.filter(b => b.y < canvas.height);
     invaderBullets.forEach((b, bIdx) => {
         b.update();
@@ -1184,6 +1266,9 @@ function updateUpgradeOverlay() {
 
     const shieldCard = document.querySelector('.card.shield');
     if (shieldCard) shieldCard.querySelector('.level-info').textContent = `LVL ${player.upgrades.shield}`;
+
+    const shockwaveCard = document.querySelector('.card.shockwave');
+    if (shockwaveCard) shockwaveCard.querySelector('.level-info').textContent = `LVL ${player.upgrades.shockwave}`;
 }
 
 function selectUpgrade(type) {
@@ -1205,6 +1290,8 @@ function selectUpgrade(type) {
         player.upgrades.speed += 1;
     } else if (type === 'shield') {
         player.upgrades.shield += 1;
+    } else if (type === 'shockwave') {
+        player.upgrades.shockwave += 1;
     }
 
     if (playerMode === 2 && currentUpgradingPlayer === 0) {
@@ -1454,6 +1541,7 @@ function initUIListeners() {
     addTouchEvents('touch-move-right', 'right');
     addTouchEvents('touch-shoot', 'shoot');
     addTouchEvents('touch-shield', 'shield');
+    addTouchEvents('touch-shockwave', 'shockwave');
 }
 
 

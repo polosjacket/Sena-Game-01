@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.50] - 2026-04-19
+### Shockwave Upgrade
+- **Objective**: Introduce a powerful screen-clearing ability that players can activate manually.
+- **Detailed Technical Changes**:
+  - **Player Mechanics**: Added `shockwave` upgrade logic and a new `Shockwave` projectile class. When activated by pressing `J` (Player 1) or `Slash` (Player 2), a massive vertical beam of energy spawns at the left edge of the screen and sweeps to the right.
+  - **Damage & Collision**: The Shockwave deals massive damage (`10 + level * 2`) to all invaders it touches and (`5 + level`) to the boss. It instantly destroys standard enemies at low levels.
+  - **Cooldown System**: Added a 5-second cooldown (`shockwaveCooldown = 300`) after firing before another shockwave can be launched.
+  - **UI/UX**: Added "SHOCKWAVE" card to the upgrade screen and a new "WAVE" touch button for mobile players.
+
+---
+
+
 ## [1.0.49] - 2026-04-19
 ### Uncapped Everything
 - **Objective**: Total unhinged power-scaling for late-game survival.
