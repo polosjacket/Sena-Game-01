@@ -451,8 +451,31 @@ button {
     
     h1 {
         font-size: 18px;
-    }
+
+/* Lives Styles */
+.lives-container {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin: 20px 0;
 }
+
+.heart {
+    font-size: 32px;
+    filter: drop-shadow(0 0 5px rgba(255, 0, 110, 0.5));
+}
+
+.heart.lost {
+    opacity: 0.2;
+    filter: grayscale(100%);
+}
+
+.secondary-btn {
+    background: var(--bg-card) !important;
+    color: var(--soft-blue) !important;
+    border: 2px solid var(--soft-blue) !important;
+}
+
 
 /* How to Play Styles */
 .how-to-content {

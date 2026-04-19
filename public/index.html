@@ -147,14 +147,15 @@
         </div>
 
         <div id="game-over-screen" class="screen">
-            <h2>MISSION FAILED</h2>
-            <div class="final-scores">
+            <h3>FINAL STAND</h3>
+            <div id="lives-display" class="lives-container"></div>
+            <div class="final-stats">
                 <p><span id="final-p1-name">P1</span>: <span id="final-p1-score">0</span></p>
                 <p><span id="final-p2-name">P2</span>: <span id="final-p2-score">0</span></p>
             </div>
             <div class="game-over-actions">
-                <button id="continue-btn">CONTINUE MISSION</button>
-                <button id="restart-btn">MAIN MENU</button>
+                <button id="restart-btn" class="action-btn">RE-DEPLOY</button>
+                <button id="quit-btn" class="action-btn secondary-btn">QUIT</button>
             </div>
         </div>
     </div>

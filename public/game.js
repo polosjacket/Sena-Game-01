@@ -219,6 +219,8 @@ let animationId;
 let currentUpgradingPlayer = 0;
 let heart = null;
 let heartSpawnedInRound = false;
+let totalLives = 3;
+
 
 // Constants
 const PLAYER_SPEED = 5;
@@ -1149,13 +1151,34 @@ function selectUpgrade(type) {
     }
 }
 
+function updateLivesUI() {
+    const container = document.getElementById('lives-display');
+    if (!container) return;
+    container.innerHTML = '';
+    for (let i = 0; i < 3; i++) {
+        const heart = document.createElement('span');
+        heart.className = i < totalLives ? 'heart' : 'heart lost';
+        heart.textContent = '❤️';
+        container.appendChild(heart);
+    }
+}
+
 function endGame() {
+    totalLives--;
     gameState = 'GAME_OVER';
     cancelAnimationFrame(animationId);
     sfx.playLoseJingle();
 
     document.getElementById('game-screen').classList.remove('active');
     document.getElementById('game-over-screen').classList.add('active');
+
+    updateLivesUI();
+    const restartBtn = document.getElementById('restart-btn');
+    if (totalLives > 0) {
+        restartBtn.textContent = 'RE-DEPLOY';
+    } else {
+        restartBtn.textContent = 'RETRY FROM START';
+    }
 
     document.getElementById('final-p1-name').textContent = players[0].name;
     document.getElementById('final-p1-score').textContent = players[0].score;
@@ -1170,6 +1193,7 @@ function endGame() {
         document.getElementById('final-p2-name').parentElement.style.display = 'none';
     }
 }
+
 
 async function saveScore(name, score) {
     try {
@@ -1261,12 +1285,25 @@ function initUIListeners() {
 
     
     // Continue/Retry actions
-    safeAddListener('continue-btn', 'click', continueGame);
     safeAddListener('restart-btn', 'click', () => {
-        document.getElementById('game-over-screen').classList.remove('active');
-        document.getElementById('setup-screen').classList.add('active');
-        loadScores();
+        if (totalLives > 0) {
+            // Re-deploy at current level
+            document.getElementById('game-over-screen').classList.remove('active');
+            initInvaders();
+            gameState = 'PLAYING';
+            sfx.playBGM();
+        } else {
+            // Full restart
+            totalLives = 3;
+            level = 1;
+            document.getElementById('game-over-screen').classList.remove('active');
+            document.getElementById('setup-screen').classList.add('active');
+            loadScores();
+        }
     });
+
+    safeAddListener('quit-btn', 'click', quitToMenu);
+
 
     document.querySelectorAll('.diff-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {

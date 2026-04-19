@@ -4,6 +4,23 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.41] - 2026-04-19
+### 3-Heart Lives System
+- **Objective**: Introduce a limited-continuation mechanic to raise the stakes and reward skillful play.
+- **Detailed Technical Changes**:
+  - **Game Over Overhaul**:
+    - Removed the unlimited "Continue Mission" button.
+    - Implemented a **Global Lives (Hearts)** system.
+    - Added a visual heart display to the game-over screen.
+  - **Logic Scaling**:
+    - Players start with 3 hearts.
+    - Losing a level consumes 1 heart.
+    - If hearts > 0, players can **RE-DEPLOY** (restart current level).
+    - If hearts = 0, players must **RETRY FROM START** (resets to Level 1 and 3 hearts).
+
+---
+
+
 ## [1.0.40] - 2026-04-19
 ### "How to Play" Mission Briefing
 - **Objective**: Improve onboarding for new players by providing an in-game guide for controls and mechanics.
