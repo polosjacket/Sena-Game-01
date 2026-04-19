@@ -1038,15 +1038,6 @@ class Bullet {
         ctx.restore();
     }
 
-    update() {
-        if (this.type === 'laser') {
-            this.life--;
-        } else {
-            this.y += this.speed;
-            }
-        }
-        ctx.restore();
-    }
 
     update() {
         if (this.type === 'laser') {
@@ -2019,11 +2010,18 @@ function initPlayerMode() {
 
 
 // Initial Load
-document.addEventListener('DOMContentLoaded', () => {
+function initAll() {
     initUIListeners();
     initPlayerMode();
     loadScores();
-});
+    console.log("Game UI initialized!");
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll);
+} else {
+    initAll();
+}
 
 // Intro Sound & Audio Init
 window.addEventListener('mousedown', () => {
