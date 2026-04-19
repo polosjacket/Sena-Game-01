@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.53] - 2026-04-19
+### Cleanup & Bug Fixes
+- **Test Removal**: Removed the frontend functionality tests (Playwright) to speed up development. Deleted `tests/game.spec.js`, `playwright.config.js`, and associated output directories.
+- **Dependency Management**: Cleaned up `package.json` by removing Playwright-related scripts and devDependencies.
+- **Bug Fix**: Resolved an issue where buttons on the setup screen were unresponsive due to a syntax error in `public/game.js` (duplicate `update()` method in the `Bullet` class).
+- **Initialization**: Improved the game's startup reliability by ensuring `initAll()` runs whether `DOMContentLoaded` has already fired or not.
+
+---
+
 ## [1.0.52] - 2026-04-19
 ### Boss Visuals & Laser Balancing
 - **Boss Appearance**: Redrew the Duolingo boss from a square block to a more detailed bird shape, complete with rounded body, wings, ears (tufts), and circular eyes.
