@@ -660,26 +660,55 @@ class Boss {
             ctx.fillRect(this.x + this.width/2 - 20, this.y + this.height, 40, canvas.height);
         }
 
-        // Duolingo Owl Body
+        // Duolingo Owl Body (Rounded bird type)
         ctx.fillStyle = this.color;
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+        
+        // Draw main body (rounded rectangle)
+        ctx.beginPath();
+        const radius = 40;
+        ctx.roundRect(this.x, this.y, this.width, this.height, radius);
+        ctx.fill();
+
+        // Wings
+        ctx.beginPath();
+        ctx.ellipse(this.x - 10, this.y + 60, 20, 40, Math.PI/6, 0, Math.PI * 2);
+        ctx.ellipse(this.x + this.width + 10, this.y + 60, 20, 40, -Math.PI/6, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Ears (Tufts)
+        ctx.beginPath();
+        ctx.moveTo(this.x + 10, this.y);
+        ctx.lineTo(this.x + 30, this.y - 20);
+        ctx.lineTo(this.x + 50, this.y);
+        ctx.fill();
+        
+        ctx.beginPath();
+        ctx.moveTo(this.x + this.width - 10, this.y);
+        ctx.lineTo(this.x + this.width - 30, this.y - 20);
+        ctx.lineTo(this.x + this.width - 50, this.y);
+        ctx.fill();
         
         // Beak
         ctx.fillStyle = '#ffc800';
         ctx.beginPath();
-        ctx.moveTo(this.x + this.width / 2 - 15, this.y + 50);
-        ctx.lineTo(this.x + this.width / 2 + 15, this.y + 50);
-        ctx.lineTo(this.x + this.width / 2, this.y + 70);
+        ctx.moveTo(this.x + this.width / 2 - 15, this.y + 55);
+        ctx.lineTo(this.x + this.width / 2 + 15, this.y + 55);
+        ctx.lineTo(this.x + this.width / 2, this.y + 80);
         ctx.fill();
 
         // Eyes (Staring menacingly)
         ctx.fillStyle = '#ffffff';
-        ctx.fillRect(this.x + 15, this.y + 15, 30, 30);
-        ctx.fillRect(this.x + 55, this.y + 15, 30, 30);
+        ctx.beginPath();
+        ctx.arc(this.x + 30, this.y + 35, 18, 0, Math.PI * 2);
+        ctx.arc(this.x + this.width - 30, this.y + 35, 18, 0, Math.PI * 2);
+        ctx.fill();
+        
         ctx.fillStyle = '#000000';
         // Angry pupils
-        ctx.fillRect(this.x + 25, this.y + 25, 15, 15);
-        ctx.fillRect(this.x + 60, this.y + 25, 15, 15);
+        ctx.beginPath();
+        ctx.arc(this.x + 30, this.y + 35, 8, 0, Math.PI * 2);
+        ctx.arc(this.x + this.width - 30, this.y + 35, 8, 0, Math.PI * 2);
+        ctx.fill();
         
         // Draw Knives (instead of fingers)
         if (this.level >= 10) {
@@ -1091,7 +1120,7 @@ function gameLoop() {
             if (b.x < boss.x + boss.width && b.x + b.width > boss.x && b.y < boss.y + boss.height && b.y + b.height > boss.y) {
                 if (b.type === 'normal') playerBullets.splice(bIdx, 1);
                 const laserDmg = 15 + (player.upgrades.laserLvl - 1) * 2;
-                boss.hp -= (b.type === 'laser' ? laserDmg : 10);
+                boss.hp -= (b.type === 'laser' ? laserDmg / 10 : 10); // Nerfed laser damage to boss
                 sfx.playHitSFX();
                 if (boss.hp <= 0) {
                     player.score += 1000;
@@ -1238,12 +1267,34 @@ function showUpgradeScreen() {
     sfx.playWinJingle();
     currentUpgradingPlayer = 0;
     
-    // Show freeze card if level was a boss level
-    if (level % 10 === 0) {
-        document.getElementById('freeze-card').classList.remove('hidden');
-    } else {
-        document.getElementById('freeze-card').classList.add('hidden');
-    }
+    const player = players[currentUpgradingPlayer];
+    
+    // Pick 2 random upgrades that are not at cap
+    const allUpgrades = ['rapid', 'explosion', 'laser', 'freeze', 'speed', 'shield', 'shockwave'];
+    const availableUpgrades = allUpgrades.filter(type => {
+        if (type === 'rapid') return player.upgrades.rapid < 10;
+        if (type === 'explosion') return player.upgrades.explosion < 1.0;
+        if (type === 'laser') return player.upgrades.laserLvl < 10;
+        if (type === 'freeze') return player.upgrades.freeze < 1.0;
+        if (type === 'speed') return (player.upgrades.speed - PLAYER_SPEED) < 10;
+        if (type === 'shield') return player.upgrades.shield < 10;
+        if (type === 'shockwave') return player.upgrades.shockwave < 10;
+        return true;
+    });
+
+    // Shuffle and pick 2
+    const shuffled = availableUpgrades.sort(() => 0.5 - Math.random());
+    const selected = shuffled.slice(0, 2);
+
+    // Show only selected cards
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+        if (selected.includes(card.dataset.upgrade)) {
+            card.classList.remove('hidden');
+        } else {
+            card.classList.add('hidden');
+        }
+    });
     
     updateUpgradeOverlay();
     document.getElementById('upgrade-overlay').classList.add('active');
@@ -1255,20 +1306,20 @@ function updateUpgradeOverlay() {
     
     // Update card levels
     const cards = document.querySelectorAll('.card');
-    cards[0].querySelector('.level-info').textContent = `LVL ${player.upgrades.rapid}`;
-    cards[1].querySelector('.level-info').textContent = `${Math.round(player.upgrades.explosion * 100)}% CHANCE`;
-    cards[2].querySelector('.level-info').textContent = `LVL ${player.upgrades.laserLvl} (${Math.round(player.upgrades.laser * 100)}% CHANCE)`;
-    cards[3].querySelector('.level-info').textContent = `${Math.round(player.upgrades.freeze * 100)}% CHANCE`;
-    
-    // Speed card is cards[4] (index 4) if it's the 5th card
-    const speedCard = document.querySelector('.card.speed');
-    if (speedCard) speedCard.querySelector('.level-info').textContent = `SPD ${Math.round(player.upgrades.speed)}`;
-
-    const shieldCard = document.querySelector('.card.shield');
-    if (shieldCard) shieldCard.querySelector('.level-info').textContent = `LVL ${player.upgrades.shield}`;
-
-    const shockwaveCard = document.querySelector('.card.shockwave');
-    if (shockwaveCard) shockwaveCard.querySelector('.level-info').textContent = `LVL ${player.upgrades.shockwave}`;
+    cards.forEach(card => {
+        const type = card.dataset.upgrade;
+        let info = '';
+        if (type === 'rapid') info = `LVL ${player.upgrades.rapid}/10`;
+        else if (type === 'explosion') info = `${Math.round(player.upgrades.explosion * 100)}% CHANCE (LVL ${Math.round(player.upgrades.explosion * 10)}/10)`;
+        else if (type === 'laser') info = `LVL ${player.upgrades.laserLvl}/10 (${Math.round(player.upgrades.laser * 100)}% CHANCE)`;
+        else if (type === 'freeze') info = `${Math.round(player.upgrades.freeze * 100)}% CHANCE (LVL ${Math.round(player.upgrades.freeze * 10)}/10)`;
+        else if (type === 'speed') info = `SPD ${Math.round(player.upgrades.speed)} (LVL ${Math.round(player.upgrades.speed - PLAYER_SPEED)}/10)`;
+        else if (type === 'shield') info = `LVL ${player.upgrades.shield}/10`;
+        else if (type === 'shockwave') info = `LVL ${player.upgrades.shockwave}/10`;
+        
+        const infoEl = card.querySelector('.level-info');
+        if (infoEl) infoEl.textContent = info;
+    });
 }
 
 function selectUpgrade(type) {
@@ -1277,20 +1328,20 @@ function selectUpgrade(type) {
     
     const player = players[currentUpgradingPlayer];
     
-    if (type === 'rapid') {
+    if (type === 'rapid' && player.upgrades.rapid < 10) {
         player.upgrades.rapid++;
-    } else if (type === 'explosion') {
+    } else if (type === 'explosion' && player.upgrades.explosion < 1.0) {
         player.upgrades.explosion += 0.1;
-    } else if (type === 'laser') {
+    } else if (type === 'laser' && player.upgrades.laserLvl < 10) {
         player.upgrades.laserLvl++;
         player.upgrades.laser += 0.1;
-    } else if (type === 'freeze') {
+    } else if (type === 'freeze' && player.upgrades.freeze < 1.0) {
         player.upgrades.freeze += 0.1;
-    } else if (type === 'speed') {
+    } else if (type === 'speed' && (player.upgrades.speed - PLAYER_SPEED) < 10) {
         player.upgrades.speed += 1;
-    } else if (type === 'shield') {
+    } else if (type === 'shield' && player.upgrades.shield < 10) {
         player.upgrades.shield += 1;
-    } else if (type === 'shockwave') {
+    } else if (type === 'shockwave' && player.upgrades.shockwave < 10) {
         player.upgrades.shockwave += 1;
     }
 

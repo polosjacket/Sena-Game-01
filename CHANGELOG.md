@@ -4,6 +4,26 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.52] - 2026-04-19
+### Boss Visuals & Laser Balancing
+- **Boss Appearance**: Redrew the Duolingo boss from a square block to a more detailed bird shape, complete with rounded body, wings, ears (tufts), and circular eyes.
+- **Weapon Balancing**: Reduced the damage of the player's laser against the boss by 90% (`damage / 10`) to prevent 1-shotting and ensure a more engaging fight. Standard bullets still deal full damage.
+
+---
+
+
+## [1.0.51] - 2026-04-19
+### Upgrade Overhaul (Nerfs & Randomization)
+- **Objective**: Balance late-game scaling and introduce strategic variety by limiting upgrades.
+- **Detailed Technical Changes**:
+  - **Level Caps**: All upgrades (Rapid Fire, Explosion, Laser, Freeze, Speed, Shield, Shockwave) are now capped at **Level 10**.
+  - **Randomized Selection**: The upgrade screen now only displays **2 random cards** from the pool of available (uncapped) upgrades.
+  - **UI**: Updated the upgrade overlay to display levels as `LVL X/10` and hide cards that were not randomly selected.
+  - **Logic**: Once an upgrade reaches Level 10, it is automatically removed from the random selection pool for that player.
+
+---
+
+
 ## [1.0.50] - 2026-04-19
 ### Shockwave Upgrade
 - **Objective**: Introduce a powerful screen-clearing ability that players can activate manually.
