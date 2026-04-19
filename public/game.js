@@ -440,8 +440,65 @@ class Player {
 }
 
 
+class HomingSword {
+    constructor(x, y, target) {
+        this.x = x;
+        this.y = y;
+        this.width = 10;
+        this.height = 30;
+        this.target = target;
+        this.timer = 120; // 2 seconds at 60fps
+        this.speed = 4;
+        this.angle = Math.PI / 2; // Point down initially
+        this.type = 'sword';
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+        // Draw sword pointing towards angle
+        ctx.rotate(this.angle - Math.PI / 2); 
+        
+        // Handle
+        ctx.fillStyle = '#5c4033'; 
+        ctx.fillRect(-2, -15, 4, 10);
+        // Guard
+        ctx.fillStyle = '#7f8c8d';
+        ctx.fillRect(-8, -5, 16, 3);
+        // Blade
+        ctx.fillStyle = '#ecf0f1';
+        ctx.beginPath();
+        ctx.moveTo(-4, -2);
+        ctx.lineTo(4, -2);
+        ctx.lineTo(0, 15); // Tip
+        ctx.fill();
+        
+        ctx.restore();
+    }
+
+    update() {
+        if (this.timer > 0) {
+            this.timer--;
+            // Track target if alive
+            if (this.target && this.target.alive) {
+                const targetX = this.target.x + this.target.width / 2;
+                const targetY = this.target.y + this.target.height / 2;
+                const dx = targetX - (this.x + this.width / 2);
+                const dy = targetY - (this.y + this.height / 2);
+                this.angle = Math.atan2(dy, dx);
+            }
+            // Move along angle
+            this.x += Math.cos(this.angle) * this.speed;
+            this.y += Math.sin(this.angle) * this.speed;
+        } else {
+            // Drop straight down after 2 seconds
+            this.y += this.speed * 1.5;
+        }
+    }
+}
+
 class Invader {
-    constructor(x, y, speed, hp) {
+    constructor(x, y, speed, hp, type = 'normal') {
         this.x = x;
         this.y = y;
         this.width = INVADER_SIZE;
@@ -451,18 +508,27 @@ class Invader {
         this.hp = hp;
         this.alive = true;
         this.frozen = 0; // Frames
+        this.type = type;
     }
 
     draw() {
         if (this.frozen > 0) ctx.fillStyle = '#caf0f8';
+        else if (this.type === 'swordsman') ctx.fillStyle = '#e67e22'; // Orange
         else if (this.hp < this.maxHp) ctx.fillStyle = '#b79bed'; // Damaged color
-        else ctx.fillStyle = '#cdb4db';
+        else ctx.fillStyle = '#cdb4db'; // Normal color
         
         // Simple 8-bit invader shape
         ctx.fillRect(this.x + 5, this.y + 5, this.width - 10, this.height - 10);
         ctx.fillRect(this.x + 10, this.y + 2, 10, 5); // top
         ctx.fillRect(this.x + 2, this.y + 10, 5, 10); // sides
         ctx.fillRect(this.x + 23, this.y + 10, 5, 10);
+
+        if (this.type === 'swordsman') {
+            ctx.fillStyle = '#ecf0f1';
+            ctx.fillRect(this.x + 13, this.y + 10, 4, 15);
+            ctx.fillStyle = '#7f8c8d';
+            ctx.fillRect(this.x + 10, this.y + 10, 10, 3);
+        }
     }
 
     update(direction) {
@@ -789,7 +855,11 @@ function initInvaders() {
     const invaderHp = 1 + Math.floor((level - 1) / 5);
     for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-            invaders.push(new Invader(startX + c * (INVADER_SIZE + padding), 50 + r * (INVADER_SIZE + padding), speed, invaderHp));
+            let type = 'normal';
+            if (level >= 3 && Math.random() < Math.min(0.1 + (level * 0.02), 0.5)) {
+                type = 'swordsman';
+            }
+            invaders.push(new Invader(startX + c * (INVADER_SIZE + padding), 50 + r * (INVADER_SIZE + padding), speed, invaderHp, type));
         }
     }
 }
@@ -904,7 +974,14 @@ function gameLoop() {
         // Randomly shoot
         if (Math.random() < 0.001 * (difficulty === 'hard' ? 3 : difficulty === 'medium' ? 2 : 1)) {
             sfx.playShootEnemy();
-            invaderBullets.push(new Bullet(inv.x + inv.width / 2, inv.y + inv.height, '#cdb4db', 3));
+            if (inv.type === 'swordsman') {
+                // Find a random alive player as target
+                const alivePlayers = players.filter(p => p.alive);
+                const target = alivePlayers.length > 0 ? alivePlayers[Math.floor(Math.random() * alivePlayers.length)] : players[0];
+                invaderBullets.push(new HomingSword(inv.x + inv.width / 2, inv.y + inv.height, target));
+            } else {
+                invaderBullets.push(new Bullet(inv.x + inv.width / 2, inv.y + inv.height, '#cdb4db', 3));
+            }
         }
     });
 

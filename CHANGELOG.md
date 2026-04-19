@@ -4,6 +4,21 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.44] - 2026-04-19
+### Homing Swordsman Enemy
+- **Objective**: Introduce a new highly aggressive enemy type that forces players to keep moving.
+- **Detailed Technical Changes**:
+  - **New Enemy - Swordsman**:
+    - Added a `'swordsman'` type to the `Invader` class. They are styled distinctly in Orange with a tiny sword icon.
+    - Swordsmen start spawning randomly from **Level 3** onwards.
+  - **New Projectile - Homing Sword**:
+    - Created a new `HomingSword` class projectile.
+    - When thrown, it actively calculates the angle to a random living player and tracks them for exactly 2 seconds.
+    - After 2 seconds, the homing capability expires and the sword drops straight down.
+
+---
+
+
 ## [1.0.43] - 2026-04-19
 ### True 3-Heart Health System
 - **Objective**: Replace the instant-death and heart-drop revival mechanics with a traditional shared health pool to improve pacing and fairness.
