@@ -1245,7 +1245,7 @@ function damagePlayer(p) {
         p.invincible = 60; // 1 second of invincibility
         sfx.playExplosion(); // Or a specific shield hit sound if one existed
         if (p.activeShields <= 0) {
-            p.shieldCooldown = 600; // 10 seconds cooldown
+            p.shieldCooldown = 180; // 3 seconds cooldown
         }
         return;
     }

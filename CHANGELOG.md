@@ -19,7 +19,7 @@ All notable changes to this project will be documented in this file. This projec
 - **Objective**: Introduce an active defense mechanism that allows players to strategically block incoming damage.
 - **Detailed Technical Changes**:
   - **Player Mechanics**: Added `shield` upgrade logic. When activated by pressing `S` (Player 1) or `Down Arrow` (Player 2), the player gains a glowing cyan shield ring. The shield can block a number of hits equal to its upgrade level.
-  - **Cooldown System**: Added a 10-second cooldown (`shieldCooldown = 600`) after the shield is fully depleted before it can be activated again.
+  - **Cooldown System**: Added a 3-second cooldown (`shieldCooldown = 180`) after the shield is fully depleted before it can be activated again.
   - **Damage System**: Updated `damagePlayer()` to intercept damage and reduce `activeShields` instead of deducting from `totalLives`. Grants 1-second invincibility per shield hit.
   - **UI/UX**: Added "FORCE FIELD" card to the upgrade screen and a new "SHIELD" touch button for mobile players.
 
