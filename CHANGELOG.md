@@ -4,6 +4,19 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.42] - 2026-04-19
+### Duolingo Boss Update
+- **Objective**: Introduce a terrifying new visual aesthetic for the Boss encounter.
+- **Detailed Technical Changes**:
+  - **Boss Sprite**: 
+    - Updated the Boss drawing logic to resemble Duo the Owl.
+    - Changed the color to Duolingo green (`#58cc02`), added a yellow beak, and menacing eyes.
+  - **Attack Visuals**:
+    - Replaced the blocky "fingers" with sharp, blood-stained "knives" to match the menacing aura.
+
+---
+
+
 ## [1.0.41] - 2026-04-19
 ### 3-Heart Lives System
 - **Objective**: Introduce a limited-continuation mechanic to raise the stakes and reward skillful play.

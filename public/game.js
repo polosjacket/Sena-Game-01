@@ -517,7 +517,8 @@ class Boss {
         this.hp = hp;
         this.speed = 2;
         this.direction = 1;
-        this.color = '#ff0054';
+        this.color = '#58cc02'; // Duolingo Green
+
         this.level = level;
         this.attackTimer = 0;
         this.attackState = 'IDLE'; // IDLE, WARNING, SLAM, SIDE, LASER
@@ -539,29 +540,56 @@ class Boss {
             ctx.fillRect(this.x + this.width/2 - 20, this.y + this.height, 40, canvas.height);
         }
 
+        // Duolingo Owl Body
         ctx.fillStyle = this.color;
-        // 8-bit Boss Face
         ctx.fillRect(this.x, this.y, this.width, this.height);
         
-        // Draw Hands/Fingers if level >= 10
+        // Beak
+        ctx.fillStyle = '#ffc800';
+        ctx.beginPath();
+        ctx.moveTo(this.x + this.width / 2 - 15, this.y + 50);
+        ctx.lineTo(this.x + this.width / 2 + 15, this.y + 50);
+        ctx.lineTo(this.x + this.width / 2, this.y + 70);
+        ctx.fill();
+
+        // Eyes (Staring menacingly)
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(this.x + 15, this.y + 15, 30, 30);
+        ctx.fillRect(this.x + 55, this.y + 15, 30, 30);
+        ctx.fillStyle = '#000000';
+        // Angry pupils
+        ctx.fillRect(this.x + 25, this.y + 25, 15, 15);
+        ctx.fillRect(this.x + 60, this.y + 25, 15, 15);
+        
+        // Draw Knives (instead of fingers)
         if (this.level >= 10) {
-            ctx.fillStyle = this.color;
-            // Left fingers
-            if (this.level >= 10) ctx.fillRect(this.x - 30, this.y + 20, 15, 40);
-            if (this.level >= 30) ctx.fillRect(this.x - 50, this.y + 20, 15, 40);
-            // Right fingers
-            if (this.level >= 20) ctx.fillRect(this.x + this.width + 15, this.y + 20, 15, 40);
-            if (this.level >= 40) ctx.fillRect(this.x + this.width + 35, this.y + 20, 15, 40);
+            const drawKnife = (kx, ky) => {
+                // Handle
+                ctx.fillStyle = '#5c4033'; 
+                ctx.fillRect(kx + 5, ky + 25, 10, 25);
+                // Guard
+                ctx.fillStyle = '#7f8c8d';
+                ctx.fillRect(kx, ky + 25, 20, 5);
+                // Blade
+                ctx.fillStyle = '#ecf0f1';
+                ctx.beginPath();
+                ctx.moveTo(kx + 5, ky + 25);
+                ctx.lineTo(kx + 15, ky + 25);
+                ctx.lineTo(kx + 10, ky - 10); // Sharp point
+                ctx.fill();
+                // Blood detail on blade
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(kx + 10, ky, 2, 10);
+            };
+
+            // Left Knives
+            if (this.level >= 10) drawKnife(this.x - 30, this.y + 20);
+            if (this.level >= 30) drawKnife(this.x - 60, this.y + 20);
+            // Right Knives
+            if (this.level >= 20) drawKnife(this.x + this.width + 10, this.y + 20);
+            if (this.level >= 40) drawKnife(this.x + this.width + 40, this.y + 20);
         }
 
-
-        // Eyes
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(this.x + 20, this.y + 20, 20, 20);
-        ctx.fillRect(this.x + 60, this.y + 20, 20, 20);
-        ctx.fillStyle = '#000000';
-        ctx.fillRect(this.x + 25, this.y + 25, 10, 10);
-        ctx.fillRect(this.x + 65, this.y + 25, 10, 10);
         
         // Health Bar
         const barWidth = 300;
@@ -838,28 +866,7 @@ function startGame() {
     gameLoop();
 }
 
-function continueGame() {
-    players.forEach(p => {
-        p.alive = true;
-        p.invincible = 300; // 5 seconds
-        p.cooldown = 0;
-    });
-    
-    playerBullets = [];
-    invaderBullets = [];
-    heart = null;
-    heartSpawnedInRound = false;
-    
-    document.getElementById('game-over-screen').classList.remove('active');
-    document.getElementById('game-screen').classList.add('active');
-    document.getElementById('pause-overlay').classList.remove('active');
-    document.getElementById('upgrade-overlay').classList.remove('active');
-    
-    sfx.init();
-    sfx.playBGM();
-    gameState = 'PLAYING';
-    gameLoop();
-}
+
 
 let invaderDirection = 1;
 let invaderDrop = false;
