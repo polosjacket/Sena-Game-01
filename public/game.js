@@ -1116,7 +1116,7 @@ function damagePlayer(p) {
         endGame();
     } else {
         p.invincible = 120; // 2 seconds of invincibility
-        sfx.playPlayerHit(); // Plays explosion sound as fallback if hit sound is not added
+        sfx.playExplosion();
     }
 }
 
