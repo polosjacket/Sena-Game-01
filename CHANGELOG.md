@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.37] - 2026-04-19
+### Laser Cooldown Optimization
+- **Objective**: Improve gameplay fluidity by removing the excessive delay after firing a laser.
+- **Detailed Technical Changes**:
+  - **Weapon Logic**:
+    - Removed the hardcoded 90-frame (1.5s) cooldown for lasers.
+    - Synchronized laser cooldown with the normal shot formula (`Math.max(5, 30 - (rapid * 3))`), allowing it to scale with the **Rapid Fire** upgrade.
+
+---
+
+
 ## [1.0.36] - 2026-04-19
 ### Boss Behavior Refinement
 - **Objective**: Scale Boss difficulty and visual complexity more linearly with level progression.

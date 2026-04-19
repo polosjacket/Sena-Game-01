@@ -398,7 +398,8 @@ class Player {
             if (isLaser) {
                 const b = new Bullet(this.x + this.width / 2 - 10, 0, '#ffffff', 0, this.id, 'laser');
                 playerBullets.push(b);
-                this.cooldown = 90; // Longer cooldown for laser
+                this.cooldown = Math.max(5, 30 - (this.upgrades.rapid * 3)); // Use same cooldown as normal shots
+
             } else {
                 const b = new Bullet(this.x + this.width / 2 - 2, this.y, this.color, -7, this.id, 'normal');
                 playerBullets.push(b);
