@@ -579,6 +579,103 @@ class HomingSword {
     }
 }
 
+class Axe {
+    constructor(x, y, targetY) {
+        this.x = x;
+        this.y = y;
+        this.width = 25;
+        this.height = 25;
+        this.targetY = targetY;
+        this.speed = 3.5;
+        this.exploded = false;
+        this.explosionTimer = 0;
+        this.maxExplosionTime = 40;
+        this.explosionRadius = 80;
+        this.type = 'axe';
+        this.finished = false;
+    }
+
+    draw() {
+        if (this.finished) return;
+
+        if (this.exploded) {
+            ctx.save();
+            ctx.beginPath();
+            ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.explosionRadius * (this.explosionTimer / this.maxExplosionTime), 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 100, 0, ${1 - this.explosionTimer / this.maxExplosionTime})`;
+            ctx.fill();
+            // Inner glow
+            ctx.beginPath();
+            ctx.arc(this.x + this.width / 2, this.y + this.height / 2, (this.explosionRadius * 0.6) * (this.explosionTimer / this.maxExplosionTime), 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 0, ${0.8 * (1 - this.explosionTimer / this.maxExplosionTime)})`;
+            ctx.fill();
+            ctx.restore();
+            return;
+        }
+
+        // Draw Warning Area
+        ctx.save();
+        const alpha = 0.2 + Math.sin(Date.now() * 0.01) * 0.15;
+        ctx.fillStyle = `rgba(255, 0, 0, ${alpha})`;
+        ctx.fillRect(this.x + this.width/2 - this.explosionRadius, this.targetY + this.height/2 - this.explosionRadius, this.explosionRadius * 2, this.explosionRadius * 2);
+        ctx.strokeStyle = `rgba(255, 0, 0, ${alpha + 0.3})`;
+        ctx.lineWidth = 2;
+        ctx.setLineDash([8, 4]);
+        ctx.strokeRect(this.x + this.width/2 - this.explosionRadius, this.targetY + this.height/2 - this.explosionRadius, this.explosionRadius * 2, this.explosionRadius * 2);
+        ctx.restore();
+
+        // Draw Axe
+        ctx.save();
+        ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+        ctx.rotate(Date.now() * 0.015);
+        
+        // Blade
+        ctx.fillStyle = '#bdc3c7';
+        ctx.beginPath();
+        ctx.moveTo(0, -12);
+        ctx.lineTo(18, -18);
+        ctx.lineTo(18, 18);
+        ctx.lineTo(0, 12);
+        ctx.fill();
+        
+        // Handle
+        ctx.fillStyle = '#795548';
+        ctx.fillRect(-3, -8, 6, 25);
+        
+        ctx.restore();
+    }
+
+    update() {
+        if (this.finished) return;
+
+        if (this.exploded) {
+            this.explosionTimer++;
+            if (this.explosionTimer >= this.maxExplosionTime) {
+                this.finished = true;
+                this.y = 9999; // Move out of screen for safety filter
+            }
+            
+            // Damage players in radius
+            players.forEach(p => {
+                if (p.alive && p.invincible <= 0) {
+                    const dist = Math.hypot(p.x + p.width/2 - (this.x + this.width/2), p.y + p.height/2 - (this.y + this.height/2));
+                    if (dist < this.explosionRadius) {
+                        damagePlayer(p);
+                    }
+                }
+            });
+            return;
+        }
+
+        this.y += this.speed;
+        if (this.y >= this.targetY) {
+            this.exploded = true;
+            sfx.playExplosion();
+            createFirework(this.x + this.width / 2, this.y + this.height / 2);
+        }
+    }
+}
+
 class Invader {
     constructor(x, y, speed, hp, type = 'normal') {
         this.x = x;
@@ -596,6 +693,7 @@ class Invader {
     draw() {
         if (this.frozen > 0) ctx.fillStyle = '#caf0f8';
         else if (this.type === 'swordsman') ctx.fillStyle = '#e67e22'; // Orange
+        else if (this.type === 'axeman') ctx.fillStyle = '#95a5a6'; // Silver/Iron
         else if (this.hp < this.maxHp) ctx.fillStyle = '#b79bed'; // Damaged color
         else ctx.fillStyle = '#cdb4db'; // Normal color
         
@@ -610,6 +708,11 @@ class Invader {
             ctx.fillRect(this.x + 13, this.y + 10, 4, 15);
             ctx.fillStyle = '#7f8c8d';
             ctx.fillRect(this.x + 10, this.y + 10, 10, 3);
+        } else if (this.type === 'axeman') {
+            ctx.fillStyle = '#bdc3c7'; // Axe head
+            ctx.fillRect(this.x + 15, this.y + 5, 8, 8);
+            ctx.fillStyle = '#795548'; // Wood handle
+            ctx.fillRect(this.x + 13, this.y + 13, 3, 10);
         }
     }
 
@@ -969,6 +1072,8 @@ function initInvaders() {
             let type = 'normal';
             if (level >= 3 && Math.random() < Math.min(0.1 + (level * 0.02), 0.5)) {
                 type = 'swordsman';
+            } else if (level >= 1 && Math.random() < 0.9) {
+                type = 'axeman';
             }
             invaders.push(new Invader(startX + c * (INVADER_SIZE + padding), 50 + r * (INVADER_SIZE + padding), speed, invaderHp, type));
         }
@@ -1084,13 +1189,15 @@ function gameLoop() {
         }
 
         // Randomly shoot
-        if (Math.random() < 0.001 * (difficulty === 'hard' ? 3 : difficulty === 'medium' ? 2 : 1)) {
+        if (Math.random() < 0.05 * (difficulty === 'hard' ? 3 : difficulty === 'medium' ? 2 : 1)) {
             sfx.playShootEnemy();
             if (inv.type === 'swordsman') {
                 // Find a random alive player as target
                 const alivePlayers = players.filter(p => p.alive);
                 const target = alivePlayers.length > 0 ? alivePlayers[Math.floor(Math.random() * alivePlayers.length)] : players[0];
                 invaderBullets.push(new HomingSword(inv.x + inv.width / 2, inv.y + inv.height, target));
+            } else if (inv.type === 'axeman') {
+                invaderBullets.push(new Axe(inv.x + inv.width / 2, inv.y + inv.height, 450));
             } else {
                 invaderBullets.push(new Bullet(inv.x + inv.width / 2, inv.y + inv.height, '#cdb4db', 3));
             }
@@ -1214,8 +1321,9 @@ function gameLoop() {
         invaders = invaders.filter(inv => !invadersToRemove.has(inv));
     }
 
-    invaderBullets = invaderBullets.filter(b => b.y < canvas.height);
-    invaderBullets.forEach((b, bIdx) => {
+    invaderBullets = invaderBullets.filter(b => b.y < canvas.height || (b.type === 'axe' && !b.finished));
+    const invaderBulletsToRemove = new Set();
+    invaderBullets.forEach((b) => {
         b.update();
         b.draw();
 
@@ -1223,12 +1331,24 @@ function gameLoop() {
         players.forEach(p => {
             if (p.alive && p.invincible <= 0) {
                 if (b.x < p.x + p.width && b.x + b.width > p.x && b.y < p.y + p.height && b.y + b.height > p.y) {
-                    damagePlayer(p);
-                    invaderBullets.splice(bIdx, 1);
+                    if (b.type === 'axe') {
+                        if (!b.exploded) {
+                            damagePlayer(p);
+                            b.exploded = true;
+                            sfx.playExplosion();
+                            createFirework(b.x + b.width / 2, b.y + b.height / 2);
+                        }
+                    } else {
+                        damagePlayer(p);
+                        invaderBulletsToRemove.add(b);
+                    }
                 }
             }
         });
     });
+    if (invaderBulletsToRemove.size > 0) {
+        invaderBullets = invaderBullets.filter(b => !invaderBulletsToRemove.has(b));
+    }
 
 
 
