@@ -1149,8 +1149,8 @@ function gameLoop() {
         invaders = invaders.filter(inv => !invadersToRemove.has(inv));
     }
 
-    // Process Shockwaves (Ends halfway across the screen)
-    playerShockwaves = playerShockwaves.filter(sw => sw.x < canvas.width / 2);
+    // Process Shockwaves
+    playerShockwaves = playerShockwaves.filter(sw => sw.x < canvas.width / 4);
     playerShockwaves.forEach(sw => {
         sw.update();
         sw.draw();
@@ -1159,7 +1159,7 @@ function gameLoop() {
         
         // Damage Boss
         if (boss && sw.x < boss.x + boss.width && sw.x + sw.width > boss.x) {
-            boss.hp -= (5 + sw.level); 
+            boss.hp -= (1 + sw.level); 
             sfx.playHitSFX();
             if (boss.hp <= 0) {
                 player.score += 1000;
@@ -1170,7 +1170,7 @@ function gameLoop() {
         // Destroy Invaders
         invaders.forEach((inv, i) => {
             if (!invadersToRemove.has(inv) && sw.x < inv.x + inv.width && sw.x + sw.width > inv.x) {
-                inv.hp -= (10 + sw.level * 2); // Massive damage
+                inv.hp -= (1 + sw.level); // Adjusted damage
                 sfx.playHitSFX();
                 if (inv.hp <= 0) {
                     invadersToRemove.add(inv);
