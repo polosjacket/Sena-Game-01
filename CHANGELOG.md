@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.48] - 2026-04-19
+### Uncapped Explosions & Dynamic Lasers
+- **Objective**: Allow players to scale up their offensive capabilities even further into the late game.
+- **Detailed Technical Changes**:
+  - **Explosion Upgrade**: Removed the 50% hard cap on the Explosion chance upgrade. Players can now upgrade it infinitely (scaling past 100% means it will always trigger, with the UI reflecting the scaling chance).
+  - **Laser Upgrade**: Modifying the laser level now dynamically increases the visual width and the hitbox of the laser beam in addition to its damage against bosses.
+
+---
+
+
 ## [1.0.47] - 2026-04-19
 ### Round Healing Mechanic
 - **Objective**: Reward players for surviving a wave by restoring lost health.

@@ -452,7 +452,8 @@ class Player {
         if (shootPressedThisFrame) {
             const now = Date.now();
             if (now - this.lastShootPressTime < 300 && this.laserCooldown <= 0 && this.upgrades.laser > 0) {
-                const b = new Bullet(this.x + this.width / 2 - 10, 0, '#ffffff', 0, this.id, 'laser');
+                const laserWidth = 20 + (this.upgrades.laserLvl * 5);
+                const b = new Bullet(this.x + this.width / 2 - (laserWidth / 2), 0, '#ffffff', 0, this.id, 'laser', laserWidth);
                 playerBullets.push(b);
                 sfx.playShootPlayer();
                 this.laserCooldown = 120; // 2 second cooldown
@@ -801,10 +802,10 @@ class Boss {
 }
 
 class Bullet {
-    constructor(x, y, color, speed, ownerId = null, type = 'normal') {
+    constructor(x, y, color, speed, ownerId = null, type = 'normal', widthOverride = null) {
         this.x = x;
         this.y = y;
-        this.width = type === 'laser' ? 20 : 4;
+        this.width = widthOverride !== null ? widthOverride : (type === 'laser' ? 20 : 4);
         this.height = type === 'laser' ? canvas.height : 10;
         this.color = color;
         this.speed = speed;
@@ -1193,7 +1194,7 @@ function selectUpgrade(type) {
     
     if (type === 'rapid' && player.upgrades.rapid < 9) {
         player.upgrades.rapid++;
-    } else if (type === 'explosion' && player.upgrades.explosion < 0.5) {
+    } else if (type === 'explosion') {
         player.upgrades.explosion += 0.1;
     } else if (type === 'laser' && player.upgrades.laserLvl < 10) {
         player.upgrades.laserLvl++;
