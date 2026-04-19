@@ -295,10 +295,16 @@ class Player {
         this.upgrades = {
             rapid: 1, // Reduces fire cooldown (Level 1-9)
             explosion: 0.1, // Chance of area-of-effect damage
-            laser: 0.1, // Chance of firing a piercing laser
+            laser: 0.1, // Enables laser ability (Double Tap)
             laserLvl: 1, // Damage multiplier for lasers
             freeze: 0 // Chance of freezing enemies in place
         };
+
+        // Laser mechanics
+        this.laserCooldown = 0;
+        this.lastShootPressTime = 0;
+        this.shootWasDown = false;
+
     }
 
     draw() {
@@ -399,23 +405,35 @@ class Player {
 
 
 
-        if ((keys[this.keys.shoot] || (this.id === 1 && touchState.shoot)) && this.cooldown <= 0) {
+        if (this.laserCooldown > 0) this.laserCooldown--;
 
-            const isLaser = Math.random() < this.upgrades.laser;
-            sfx.playShootPlayer();
-            if (isLaser) {
+        const isShootDown = keys[this.keys.shoot] || (this.id === 1 && touchState.shoot);
+        const shootPressedThisFrame = isShootDown && !this.shootWasDown;
+        this.shootWasDown = isShootDown;
+
+        if (shootPressedThisFrame) {
+            const now = Date.now();
+            if (now - this.lastShootPressTime < 300 && this.laserCooldown <= 0 && this.upgrades.laser > 0) {
                 const b = new Bullet(this.x + this.width / 2 - 10, 0, '#ffffff', 0, this.id, 'laser');
                 playerBullets.push(b);
-                this.cooldown = Math.max(5, 30 - (this.upgrades.rapid * 3)); // Use same cooldown as normal shots
-
-            } else {
-                const b = new Bullet(this.x + this.width / 2 - 2, this.y, this.color, -7, this.id, 'normal');
-                playerBullets.push(b);
-                this.cooldown = Math.max(5, 30 - (this.upgrades.rapid * 3));
+                sfx.playShootPlayer();
+                this.laserCooldown = 120; // 2 second cooldown
+                this.cooldown = 15; // Small delay before normal shots resume
+                this.lastShootPressTime = 0;
+                return;
             }
+            this.lastShootPressTime = now;
+        }
+
+        if (isShootDown && this.cooldown <= 0) {
+            const b = new Bullet(this.x + this.width / 2 - 2, this.y, this.color, -7, this.id, 'normal');
+            playerBullets.push(b);
+            sfx.playShootPlayer();
+            this.cooldown = Math.max(5, 30 - (this.upgrades.rapid * 3));
         }
 
         if (this.cooldown > 0) this.cooldown--;
+
     }
 }
 
@@ -1232,6 +1250,15 @@ function initUIListeners() {
     safeAddListener('start-btn', 'click', startGame);
     safeAddListener('pause-btn', 'click', togglePause);
     safeAddListener('quit-btn', 'click', quitToMenu);
+    
+    // How to Play
+    safeAddListener('how-to-btn', 'click', () => {
+        document.getElementById('how-to-overlay').classList.add('active');
+    });
+    safeAddListener('close-how-to', 'click', () => {
+        document.getElementById('how-to-overlay').classList.remove('active');
+    });
+
     
     // Continue/Retry actions
     safeAddListener('continue-btn', 'click', continueGame);

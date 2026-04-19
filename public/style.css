@@ -168,7 +168,7 @@ button {
 }
 
 
-#start-btn, #restart-btn {
+#start-btn, #restart-btn, #how-to-btn {
     margin-top: 20px;
     background: var(--soft-blue);
     color: var(--bg-color);
@@ -178,7 +178,28 @@ button {
     font-size: 14px;
     cursor: pointer;
     box-shadow: 4px 4px 0px var(--accent-blue);
+    transition: all 0.1s;
 }
+
+#how-to-btn {
+    background: var(--bg-card);
+    color: var(--soft-blue);
+    border: 2px solid var(--soft-blue);
+    margin-left: 10px;
+    box-shadow: 4px 4px 0px var(--accent-blue);
+}
+
+#start-btn:active, #restart-btn:active, #how-to-btn:active {
+    transform: translate(2px, 2px);
+    box-shadow: 2px 2px 0px var(--accent-blue);
+}
+
+.setup-actions {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
 
 #start-btn:hover, #restart-btn:hover {
     transform: translate(-2px, -2px);
@@ -432,3 +453,39 @@ button {
         font-size: 18px;
     }
 }
+
+/* How to Play Styles */
+.how-to-content {
+    text-align: left;
+    margin: 20px 0;
+    max-height: 300px;
+    overflow-y: auto;
+    padding-right: 10px;
+}
+
+.how-to-content section {
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 10px;
+}
+
+.how-to-content h3 {
+    color: var(--accent-pink);
+    font-size: 14px;
+    margin-bottom: 5px;
+    letter-spacing: 1px;
+}
+
+.how-to-content p {
+    font-size: 12px;
+    margin: 5px 0;
+    line-height: 1.4;
+}
+
+.how-to-content .note {
+    font-size: 10px;
+    color: var(--soft-blue);
+    font-style: italic;
+    opacity: 0.8;
+}
+

@@ -4,6 +4,34 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.40] - 2026-04-19
+### "How to Play" Mission Briefing
+- **Objective**: Improve onboarding for new players by providing an in-game guide for controls and mechanics.
+- **Detailed Technical Changes**:
+  - **UI/UX**:
+    - Added a "HOW TO PLAY" button to the main setup screen.
+    - Implemented a "Mission Briefing" overlay (modal) that details:
+      - Movement controls for P1 (including Forward Thrust).
+      - Double-tap weapon mechanics for Laser.
+      - Game objectives (Survive, Co-op revival, Upgrades).
+    - Designed a clean, scrollable layout for instructions within the game's premium aesthetic.
+
+---
+
+
+## [1.0.39] - 2026-04-19
+### Manual Laser Trigger & Cooldown
+- **Objective**: Transition the laser ability from a random chance to a deliberate, skill-based mechanic.
+- **Detailed Technical Changes**:
+  - **Weapon Logic**:
+    - Replaced the random laser chance with a **Double-Tap Trigger**.
+    - Players must now double-press the shoot key (`W` for P1, `Up Arrow` for P2) within 300ms to fire a laser.
+    - Implemented a mandatory **2-second (120-frame) cooldown** specifically for the laser ability.
+    - Normal shots continue to function via single-press or holding the key, independent of the laser cooldown.
+
+---
+
+
 ## [1.0.38] - 2026-04-19
 ### Forward Movement Mechanic
 - **Objective**: Introduce a new vertical movement layer to enhance dodging and offensive positioning.

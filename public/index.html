@@ -49,7 +49,11 @@
             </div>
 
             <div id="mobile-note" class="hidden">MOBILE: 1 PLAYER ONLY</div>
-            <button id="start-btn">LAUNCH MISSION</button>
+            <div class="setup-actions">
+                <button id="start-btn">LAUNCH MISSION</button>
+                <button id="how-to-btn" class="secondary-btn">HOW TO PLAY</button>
+            </div>
+
 
 
             <div id="high-score-board">
@@ -109,6 +113,35 @@
                 <div id="touch-move-right" class="touch-btn"><span>&gt;</span></div>
                 <div id="touch-shoot" class="touch-btn"><span>ZAP</span></div>
             </div>
+
+            <!-- How to Play Overlay -->
+            <div id="how-to-overlay" class="overlay">
+                <div class="card">
+                    <h2>MISSION BRIEFING</h2>
+                    <div class="how-to-content">
+                        <section>
+                            <h3>MOVEMENT</h3>
+                            <p><strong>P1:</strong> A / D (Side) | SPACE (Thrust Forward)</p>
+                            <p><strong>P2:</strong> ← / → (Side)</p>
+                            <p class="note">* Ships drift back to the baseline automatically.</p>
+                        </section>
+                        <section>
+                            <h3>WEAPONS</h3>
+                            <p><strong>TAP:</strong> Normal Shot (Rapid Fire scales this)</p>
+                            <p><strong>DOUBLE-TAP:</strong> Laser Beam (2s Cooldown)</p>
+                            <p><strong>P1:</strong> W | <strong>P2:</strong> ↑</p>
+                        </section>
+                        <section>
+                            <h3>OBJECTIVES</h3>
+                            <p><strong>SURVIVE:</strong> Clear waves to reach the Boss (Every 10 Levels).</p>
+                            <p><strong>CO-OP:</strong> Collect Hearts to revive fallen teammates.</p>
+                            <p><strong>UPGRADE:</strong> Choose a power-up after every round.</p>
+                        </section>
+                    </div>
+                    <button id="close-how-to" class="action-btn">BACK TO BASE</button>
+                </div>
+            </div>
+
 
 
         </div>

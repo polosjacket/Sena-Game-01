@@ -51,7 +51,8 @@ A polished, 4-player cooperative 8-bit arcade shooter. Zap the things, battle ma
 #### Player 1 (Kirby)
 - **Move**: `A/D` (Horizontal)
 - **Forward Thrust**: `Space` (Hold to move up, release to drift back)
-- **Shoot**: `W`
+- **Shoot**: `W` (Double-tap for Laser Ability, 2s cooldown)
+
 
 
 #### Player 2 (Mario)
