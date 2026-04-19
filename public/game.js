@@ -300,8 +300,12 @@ class Player {
             laser: 0.1, // Enables laser ability (Double Tap)
             laserLvl: 1, // Damage multiplier for lasers
             freeze: 0, // Chance of freezing enemies in place
-            speed: PLAYER_SPEED // Ship movement speed
+            speed: PLAYER_SPEED, // Ship movement speed
+            shield: 0 // Number of attacks the shield can block
         };
+
+        this.activeShields = 0;
+        this.shieldCooldown = 0;
 
         // Laser mechanics
         this.laserCooldown = 0;
@@ -315,6 +319,16 @@ class Player {
 
         ctx.save();
         ctx.translate(this.x, this.y);
+
+        // Draw shield ring if active
+        if (this.activeShields > 0) {
+            ctx.strokeStyle = '#00ffff';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.arc(this.width / 2, this.height / 2, 25 + (this.activeShields * 2), 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.lineWidth = 1;
+        }
 
         // Flash if invincible
         if (this.invincible > 0 && Math.floor(Date.now() / 100) % 2 === 0) {
@@ -405,8 +419,14 @@ class Player {
             this.y += 2; // Automatic drift back to baseline
         }
 
+        // Shield Logic
+        if (this.shieldCooldown > 0) this.shieldCooldown--;
 
-
+        const isShieldDown = keys[this.keys.shield] || (this.id === 1 && touchState.shield);
+        if (isShieldDown && this.upgrades.shield > 0 && this.shieldCooldown <= 0 && this.activeShields === 0) {
+            this.activeShields = this.upgrades.shield;
+            sfx.playPowerUp(); // Use an existing sound for activation
+        }
 
         if (this.laserCooldown > 0) this.laserCooldown--;
 
@@ -871,12 +891,12 @@ function startGame() {
 
     players = [];
     players.push(new Player(1, p1Name, canvas.width * 0.2, canvas.height - 40, '#bde0fe', { 
-        left: 'KeyA', right: 'KeyD', shoot: 'KeyW' 
+        left: 'KeyA', right: 'KeyD', shoot: 'KeyW', shield: 'KeyS'
     }));
     
     if (playerMode >= 2) {
         players.push(new Player(2, p2Name, canvas.width * 0.4, canvas.height - 40, '#ffafcc', { 
-            left: 'ArrowLeft', right: 'ArrowRight', shoot: 'ArrowUp' 
+            left: 'ArrowLeft', right: 'ArrowRight', shoot: 'ArrowUp', shield: 'ArrowDown'
         }));
     }
 
@@ -1145,6 +1165,9 @@ function updateUpgradeOverlay() {
     // Speed card is cards[4] (index 4) if it's the 5th card
     const speedCard = document.querySelector('.card.speed');
     if (speedCard) speedCard.querySelector('.level-info').textContent = `SPD ${Math.round(player.upgrades.speed)}`;
+
+    const shieldCard = document.querySelector('.card.shield');
+    if (shieldCard) shieldCard.querySelector('.level-info').textContent = `LVL ${player.upgrades.shield}`;
 }
 
 function selectUpgrade(type) {
@@ -1164,6 +1187,8 @@ function selectUpgrade(type) {
         player.upgrades.freeze += 0.1;
     } else if (type === 'speed') {
         player.upgrades.speed += 1;
+    } else if (type === 'shield') {
+        player.upgrades.shield += 1;
     }
 
     if (playerMode === 2 && currentUpgradingPlayer === 0) {
@@ -1192,6 +1217,17 @@ function updateLivesUI() {
 function damagePlayer(p) {
     if (!p.alive || p.invincible > 0) return;
     
+    // Shield blocks damage
+    if (p.activeShields > 0) {
+        p.activeShields--;
+        p.invincible = 60; // 1 second of invincibility
+        sfx.playExplosion(); // Or a specific shield hit sound if one existed
+        if (p.activeShields <= 0) {
+            p.shieldCooldown = 600; // 10 seconds cooldown
+        }
+        return;
+    }
+
     totalLives--;
     updateLivesUI();
     
@@ -1394,6 +1430,7 @@ function initUIListeners() {
     addTouchEvents('touch-move-left', 'left');
     addTouchEvents('touch-move-right', 'right');
     addTouchEvents('touch-shoot', 'shoot');
+    addTouchEvents('touch-shield', 'shield');
 }
 
 

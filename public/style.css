@@ -433,6 +433,19 @@ button {
     background: rgba(255, 0, 110, 0.6);
 }
 
+#touch-shield {
+    background: rgba(0, 255, 255, 0.3);
+    border-color: #00ffff;
+    width: 80px;
+    height: 80px;
+    font-size: 12px;
+    margin-left: 10px;
+}
+
+#touch-shield:active {
+    background: rgba(0, 255, 255, 0.6);
+}
+
 #touch-move-left, #touch-move-right {
     margin-right: 10px;
 }
