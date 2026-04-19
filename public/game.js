@@ -468,7 +468,7 @@ class Player {
             const b = new Bullet(this.x + this.width / 2 - 2, this.y, this.color, -7, this.id, 'normal');
             playerBullets.push(b);
             sfx.playShootPlayer();
-            this.cooldown = Math.max(5, 30 - (this.upgrades.rapid * 3));
+            this.cooldown = Math.max(1, 30 - (this.upgrades.rapid * 3));
         }
 
         if (this.cooldown > 0) this.cooldown--;
@@ -1173,9 +1173,9 @@ function updateUpgradeOverlay() {
     
     // Update card levels
     const cards = document.querySelectorAll('.card');
-    cards[0].querySelector('.level-info').textContent = `LVL ${player.upgrades.rapid}/9`;
+    cards[0].querySelector('.level-info').textContent = `LVL ${player.upgrades.rapid}`;
     cards[1].querySelector('.level-info').textContent = `${Math.round(player.upgrades.explosion * 100)}% CHANCE`;
-    cards[2].querySelector('.level-info').textContent = `LVL ${player.upgrades.laserLvl}/10 (${Math.round(player.upgrades.laser * 100)}% CHANCE)`;
+    cards[2].querySelector('.level-info').textContent = `LVL ${player.upgrades.laserLvl} (${Math.round(player.upgrades.laser * 100)}% CHANCE)`;
     cards[3].querySelector('.level-info').textContent = `${Math.round(player.upgrades.freeze * 100)}% CHANCE`;
     
     // Speed card is cards[4] (index 4) if it's the 5th card
@@ -1192,14 +1192,14 @@ function selectUpgrade(type) {
     
     const player = players[currentUpgradingPlayer];
     
-    if (type === 'rapid' && player.upgrades.rapid < 9) {
+    if (type === 'rapid') {
         player.upgrades.rapid++;
     } else if (type === 'explosion') {
         player.upgrades.explosion += 0.1;
-    } else if (type === 'laser' && player.upgrades.laserLvl < 10) {
+    } else if (type === 'laser') {
         player.upgrades.laserLvl++;
-        if (player.upgrades.laser < 0.5) player.upgrades.laser += 0.1;
-    } else if (type === 'freeze' && player.upgrades.freeze < 0.5) {
+        player.upgrades.laser += 0.1;
+    } else if (type === 'freeze') {
         player.upgrades.freeze += 0.1;
     } else if (type === 'speed') {
         player.upgrades.speed += 1;

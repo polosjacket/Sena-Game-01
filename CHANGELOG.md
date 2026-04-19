@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.49] - 2026-04-19
+### Uncapped Everything
+- **Objective**: Total unhinged power-scaling for late-game survival.
+- **Detailed Technical Changes**:
+  - **Upgrade System**: Removed all hard caps on `rapid`, `laserLvl`, `laser` (chance), and `freeze` (chance).
+  - **Fire Rate**: `rapid` fire rate minimum cooldown was reduced from 5 frames to 1 frame, allowing for absurd fire rates (60 shots/s) at extremely high levels.
+  - **UI**: Removed the `/9` and `/10` max-level text indicators from the Upgrade screen overlay in `index.html` and `game.js`.
+
+---
+
+
 ## [1.0.48] - 2026-04-19
 ### Uncapped Explosions & Dynamic Lasers
 - **Objective**: Allow players to scale up their offensive capabilities even further into the late game.
