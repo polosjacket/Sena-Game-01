@@ -1182,12 +1182,14 @@ function endGame() {
     updateLivesUI();
     const restartBtn = document.getElementById('restart-btn');
     if (totalLives > 0) {
+        restartBtn.style.display = 'inline-block';
         restartBtn.textContent = 'RE-DEPLOY';
     } else {
-        restartBtn.textContent = 'RETRY FROM START';
+        restartBtn.style.display = 'none';
     }
 
     document.getElementById('final-p1-name').textContent = players[0].name;
+
     document.getElementById('final-p1-score').textContent = players[0].score;
     saveScore(players[0].name, players[0].score);
 
@@ -1254,12 +1256,16 @@ function togglePause() {
 function quitToMenu() {
     gameState = 'SETUP';
     cancelAnimationFrame(animationId);
+    totalLives = 3; // Reset lives for next mission
+    level = 1;
     document.getElementById('game-screen').classList.remove('active');
+    document.getElementById('game-over-screen').classList.remove('active');
     document.getElementById('pause-overlay').classList.remove('active');
     document.getElementById('setup-screen').classList.add('active');
     document.getElementById('mobile-controls').classList.remove('active');
     loadScores();
 }
+
 
 
 // Safe Listener Attachment
@@ -1310,6 +1316,8 @@ function initUIListeners() {
     });
 
     safeAddListener('quit-btn', 'click', quitToMenu);
+    safeAddListener('quit-btn-go', 'click', quitToMenu);
+
 
 
     document.querySelectorAll('.diff-btn').forEach(btn => {

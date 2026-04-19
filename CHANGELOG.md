@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.43] - 2026-04-19
+### Game Over UI Polish
+- **Objective**: Refine the Game Over screen flow when players run out of lives.
+- **Detailed Technical Changes**:
+  - **Button Visibility**: 
+    - The "RE-DEPLOY" button now completely disappears when `totalLives` reaches 0, forcing players to acknowledge the "QUIT" action.
+  - **Menu Navigation**:
+    - Fixed a bug where the "QUIT" button on the Game Over screen did not properly close the overlay or reset the global lives counter.
+
+---
+
+
 ## [1.0.42] - 2026-04-19
 ### Duolingo Boss Update
 - **Objective**: Introduce a terrifying new visual aesthetic for the Boss encounter.
