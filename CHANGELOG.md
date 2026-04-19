@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.36] - 2026-04-19
+### Boss Behavior Refinement
+- **Objective**: Scale Boss difficulty and visual complexity more linearly with level progression.
+- **Detailed Technical Changes**:
+  - **Boss Logic**:
+    - Refined finger count and slam attack scaling:
+      - Level 10: 1 finger (1 slam area).
+      - Level 20: 2 fingers (2 slam areas).
+      - Level 30: 3 fingers (3 slam areas).
+      - Level 40+: 4 fingers (4 slam areas).
+    - Enabled Boss special attacks (Warning/Slam) starting from level 10 (previously level 20).
+    - Updated Boss rendering to visually display the exact number of fingers corresponding to the attack power.
+
+---
+
+
 ## [1.0.35] - 2026-04-19
 ### Mobile Support & Max 2 Players
 - **Objective**: Expand platform support to mobile devices and optimize the game for a tighter, 2-player cooperative experience.

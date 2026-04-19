@@ -514,24 +514,17 @@ class Boss {
         // 8-bit Boss Face
         ctx.fillRect(this.x, this.y, this.width, this.height);
         
-        // Draw Hands/Fingers if level >= 20
-        if (this.level >= 20) {
+        // Draw Hands/Fingers if level >= 10
+        if (this.level >= 10) {
             ctx.fillStyle = this.color;
-            if (this.level >= 40) {
-                // 4 Fingers
-                ctx.fillRect(this.x - 50, this.y + 20, 15, 40);
-                ctx.fillRect(this.x - 30, this.y + 20, 15, 40);
-                ctx.fillRect(this.x + this.width + 15, this.y + 20, 15, 40);
-                ctx.fillRect(this.x + this.width + 35, this.y + 20, 15, 40);
-            } else if (this.level >= 30) {
-                // 2 Fingers
-                ctx.fillRect(this.x - 40, this.y + 20, 25, 40);
-                ctx.fillRect(this.x + this.width + 15, this.y + 20, 25, 40);
-            } else {
-                // 1 Finger
-                ctx.fillRect(this.x + this.width / 2 - 15, this.y - 50, 30, 40);
-            }
+            // Left fingers
+            if (this.level >= 10) ctx.fillRect(this.x - 30, this.y + 20, 15, 40);
+            if (this.level >= 30) ctx.fillRect(this.x - 50, this.y + 20, 15, 40);
+            // Right fingers
+            if (this.level >= 20) ctx.fillRect(this.x + this.width + 15, this.y + 20, 15, 40);
+            if (this.level >= 40) ctx.fillRect(this.x + this.width + 35, this.y + 20, 15, 40);
         }
+
 
         // Eyes
         ctx.fillStyle = '#ffffff';
@@ -566,7 +559,7 @@ class Boss {
             this.attackTimer++;
 
             // Trigger attacks
-            if (this.level >= 20 && this.attackTimer > 180) {
+            if (this.level >= 10 && this.attackTimer > 180) {
                 const rand = Math.random();
                 if (this.level >= 100 && rand < 0.2) {
                     this.attackState = 'LASER';
@@ -584,9 +577,7 @@ class Boss {
                     this.attackTimer = 0;
                 } else {
                     this.attackState = 'WARNING';
-                    let numSlams = 1;
-                    if (this.level >= 40) numSlams = 4;
-                    else if (this.level >= 30) numSlams = 2;
+                    const numSlams = Math.min(4, Math.floor(this.level / 10));
                     
                     this.warningAreas = [];
                     for(let i=0; i<numSlams; i++) {
@@ -595,6 +586,7 @@ class Boss {
                     this.attackTimer = 0;
                 }
             }
+
         } else if (this.attackState === 'DASH_PREP') {
             this.attackTimer++;
             // 1 second warning
