@@ -237,8 +237,9 @@ let heart = null;
 let heartSpawnedInRound = false;
 let totalLives = 3;
 
+// Socket.io initialization
+const socket = io();
 
-// Constants
 const PLAYER_SPEED = 5;
 const BULLET_SPEED = 7;
 const INVADER_SIZE = 30;
@@ -1098,11 +1099,7 @@ class PVPManager {
         document.getElementById('pvp-score-board').classList.add('hidden');
 
         if (!this.socket) {
-            if (typeof io === 'undefined') {
-                document.getElementById('pvp-status').textContent = 'SERVER ERROR';
-                return;
-            }
-            this.socket = io();
+            this.socket = socket; // Use the global socket
             this.setupSocketListeners();
         }
 
@@ -1901,6 +1898,34 @@ function initUIListeners() {
         document.getElementById('how-to-overlay').classList.remove('active');
     });
 
+    // Ideas Overlay
+    safeAddListener('ideas-btn', 'click', () => {
+        document.getElementById('ideas-overlay').classList.add('active');
+        socket.emit('get_ideas');
+    });
+    safeAddListener('close-ideas', 'click', () => {
+        document.getElementById('ideas-overlay').classList.remove('active');
+    });
+    safeAddListener('submit-idea-btn', 'click', () => {
+        const input = document.getElementById('new-idea-input');
+        const content = input.value.trim();
+        if (content) {
+            socket.emit('submit_idea', { content });
+            input.value = '';
+        }
+    });
+
+    // Socket listeners for ideas
+    socket.on('ideas_list', (ideas) => {
+        const list = document.getElementById('ideas-display-list');
+        list.innerHTML = '';
+        ideas.forEach(idea => addIdeaToList(idea));
+    });
+
+    socket.on('new_idea', (idea) => {
+        addIdeaToList(idea, true);
+    });
+
     
     // Continue/Retry actions
     safeAddListener('restart-btn', 'click', () => {
@@ -1977,6 +2002,18 @@ function initUIListeners() {
     addTouchEvents('touch-shoot', 'shoot');
     addTouchEvents('touch-shield', 'shield');
     addTouchEvents('touch-shockwave', 'shockwave');
+}
+
+function addIdeaToList(idea, atTop = false) {
+    const list = document.getElementById('ideas-display-list');
+    const li = document.createElement('li');
+    const date = new Date(idea.created_at).toLocaleDateString();
+    li.textContent = `[${date}] ${idea.content}`;
+    if (atTop) {
+        list.insertBefore(li, list.firstChild);
+    } else {
+        list.appendChild(li);
+    }
 }
 
 

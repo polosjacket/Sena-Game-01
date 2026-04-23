@@ -4,6 +4,15 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.54] - 2026-04-23
+### "Ideas to Add" Feature
+- **Community Ideas**: Added a new "IDEAS TO ADD" button to the setup screen.
+- **Feedback Overlay**: Implemented a black overlay where players can submit and view game improvement ideas.
+- **Real-time Synchronization**: Used Socket.io to sync ideas across all connected clients instantly.
+- **Persistent Storage**: Created a new `ideas` table in the SQLite database to store community feedback permanently.
+
+---
+
 ## [1.0.53] - 2026-04-19
 ### Cleanup & Bug Fixes
 - **Test Removal**: Removed the frontend functionality tests (Playwright) to speed up development. Deleted `tests/game.spec.js`, `playwright.config.js`, and associated output directories.

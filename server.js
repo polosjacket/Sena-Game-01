@@ -28,6 +28,14 @@ db.exec(`
   )
 `);
 
+db.exec(`
+  CREATE TABLE IF NOT EXISTS ideas (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )
+`);
+
 // API Routes
 app.get('/api/scores', (req, res) => {
   try {
@@ -102,6 +110,25 @@ io.on('connection', (socket) => {
 
   socket.on('hit', (data) => {
     socket.to(data.roomId).emit('opponent_hit', data);
+  });
+
+  socket.on('submit_idea', (data) => {
+    try {
+      const insert = db.prepare('INSERT INTO ideas (content) VALUES (?)');
+      insert.run(data.content);
+      io.emit('new_idea', { content: data.content, created_at: new Date().toISOString() });
+    } catch (err) {
+      console.error('Error saving idea:', err);
+    }
+  });
+
+  socket.on('get_ideas', () => {
+    try {
+      const ideas = db.prepare('SELECT content, created_at FROM ideas ORDER BY created_at DESC').all();
+      socket.emit('ideas_list', ideas);
+    } catch (err) {
+      console.error('Error fetching ideas:', err);
+    }
   });
 
   socket.on('disconnect', () => {

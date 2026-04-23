@@ -612,3 +612,60 @@ button {
     from { opacity: 0.6; }
     to { opacity: 1; }
 }
+
+/* Ideas Feature Styles */
+#ideas-overlay {
+    background: #000 !important; /* Pure black as requested */
+}
+
+.ideas-container {
+    width: 80%;
+    max-width: 600px;
+    height: 80%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+}
+
+#ideas-list-container {
+    flex: 1;
+    width: 100%;
+    background: rgba(255, 255, 255, 0.05);
+    border: 2px solid var(--accent-blue);
+    padding: 15px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+#ideas-display-list {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+#ideas-display-list li {
+    font-size: 10px;
+    line-height: 1.4;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(58, 134, 255, 0.2);
+    color: var(--text-color);
+}
+
+.idea-input-group {
+    width: 100%;
+    display: flex;
+    gap: 10px;
+}
+
+#new-idea-input {
+    flex: 1;
+    font-size: 10px;
+}
+
+#ideas-btn {
+    margin-left: 10px;
+}
