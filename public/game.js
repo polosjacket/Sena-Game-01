@@ -1648,7 +1648,7 @@ function showUpgradeScreen() {
     // Pick 2 random upgrades that are not at cap
     const allUpgrades = ['rapid', 'explosion', 'laser', 'freeze', 'speed', 'shield', 'shockwave'];
     const availableUpgrades = allUpgrades.filter(type => {
-        if (type === 'rapid') return player.upgrades.rapid < 10;
+        if (type === 'rapid') return player.upgrades.rapid < 9;
         if (type === 'explosion') return player.upgrades.explosion < 1.0;
         if (type === 'laser') return player.upgrades.laserLvl < 10;
         if (type === 'freeze') return player.upgrades.freeze < 1.0;
@@ -1661,6 +1661,21 @@ function showUpgradeScreen() {
     // Shuffle and pick 2
     const shuffled = availableUpgrades.sort(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, 2);
+
+    if (selected.length === 0) {
+        // No upgrades available for any player, skip to next round
+        if (playerMode === 2 && currentUpgradingPlayer === 0) {
+            currentUpgradingPlayer = 1;
+            showUpgradeScreen();
+            return;
+        } else {
+            document.getElementById('upgrade-overlay').classList.remove('active');
+            level++;
+            initInvaders();
+            gameState = 'PLAYING';
+            return;
+        }
+    }
 
     // Show only selected cards
     const cards = document.querySelectorAll('.card');
@@ -1685,7 +1700,7 @@ function updateUpgradeOverlay() {
     cards.forEach(card => {
         const type = card.dataset.upgrade;
         let info = '';
-        if (type === 'rapid') info = `LVL ${player.upgrades.rapid}/10`;
+        if (type === 'rapid') info = `LVL ${player.upgrades.rapid}/9`;
         else if (type === 'explosion') info = `${Math.round(player.upgrades.explosion * 100)}% CHANCE (LVL ${Math.round(player.upgrades.explosion * 10)}/10)`;
         else if (type === 'laser') info = `LVL ${player.upgrades.laserLvl}/10 (${Math.round(player.upgrades.laser * 100)}% CHANCE)`;
         else if (type === 'freeze') info = `${Math.round(player.upgrades.freeze * 100)}% CHANCE (LVL ${Math.round(player.upgrades.freeze * 10)}/10)`;
@@ -1704,7 +1719,7 @@ function selectUpgrade(type) {
     
     const player = players[currentUpgradingPlayer];
     
-    if (type === 'rapid' && player.upgrades.rapid < 10) {
+    if (type === 'rapid' && player.upgrades.rapid < 9) {
         player.upgrades.rapid++;
     } else if (type === 'explosion' && player.upgrades.explosion < 1.0) {
         player.upgrades.explosion += 0.1;

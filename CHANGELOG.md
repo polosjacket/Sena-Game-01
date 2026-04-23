@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file. This projec
 
 ---
 
+## [1.0.55] - 2026-04-23
+### Upgrade Balancing & UX
+- **Rapid Fire Cap**: Reduced the maximum level for Rapid Fire from 10 to **9**.
+- **Upgrade Skip**: The game now automatically skips the upgrade screen if all available upgrades are maxed out, allowing for seamless transition between rounds.
+
+---
+
 ## [1.0.54] - 2026-04-23
 ### "Ideas to Add" Feature
 - **Community Ideas**: Added a new "IDEAS TO ADD" button to the setup screen.
