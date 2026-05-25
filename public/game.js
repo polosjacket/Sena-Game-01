@@ -1913,33 +1913,7 @@ function initUIListeners() {
         document.getElementById('how-to-overlay').classList.remove('active');
     });
 
-    // Ideas Overlay
-    safeAddListener('ideas-btn', 'click', () => {
-        document.getElementById('ideas-overlay').classList.add('active');
-        socket.emit('get_ideas');
-    });
-    safeAddListener('close-ideas', 'click', () => {
-        document.getElementById('ideas-overlay').classList.remove('active');
-    });
-    safeAddListener('submit-idea-btn', 'click', () => {
-        const input = document.getElementById('new-idea-input');
-        const content = input.value.trim();
-        if (content) {
-            socket.emit('submit_idea', { content });
-            input.value = '';
-        }
-    });
 
-    // Socket listeners for ideas
-    socket.on('ideas_list', (ideas) => {
-        const list = document.getElementById('ideas-display-list');
-        list.innerHTML = '';
-        ideas.forEach(idea => addIdeaToList(idea));
-    });
-
-    socket.on('new_idea', (idea) => {
-        addIdeaToList(idea, true);
-    });
 
     
     // Continue/Retry actions
@@ -2019,17 +1993,6 @@ function initUIListeners() {
     addTouchEvents('touch-shockwave', 'shockwave');
 }
 
-function addIdeaToList(idea, atTop = false) {
-    const list = document.getElementById('ideas-display-list');
-    const li = document.createElement('li');
-    const date = new Date(idea.created_at).toLocaleDateString();
-    li.textContent = `[${date}] ${idea.content}`;
-    if (atTop) {
-        list.insertBefore(li, list.firstChild);
-    } else {
-        list.appendChild(li);
-    }
-}
 
 
 function initPlayerMode() {
