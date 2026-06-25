@@ -1093,7 +1093,7 @@ class PVPManager {
         this.round = 1;
         
         document.getElementById('pvp-overlay').classList.add('active');
-        document.getElementById('pvp-status').textContent = 'MATCHMAKING...';
+        document.getElementById('pvp-status').textContent = getTranslation('pvp_matchmaking');
         document.getElementById('pvp-match-info').classList.add('hidden');
         document.getElementById('pvp-cards-container').classList.add('hidden');
         document.getElementById('pvp-score-board').classList.add('hidden');
@@ -1109,7 +1109,7 @@ class PVPManager {
 
     setupSocketListeners() {
         this.socket.on('waiting', () => {
-            document.getElementById('pvp-status').textContent = 'SEARCHING FOR OPPONENT...';
+            document.getElementById('pvp-status').textContent = getTranslation('pvp_searching');
         });
 
         this.socket.on('match_found', (data) => {
@@ -1118,8 +1118,8 @@ class PVPManager {
             this.opponent = data.players.find(p => p.id !== this.myId);
             this.state = 'MATCHED';
             
-            document.getElementById('pvp-status').textContent = 'MATCH FOUND!';
-            document.getElementById('pvp-players-names').textContent = `${players[0].name} VS ${this.opponent.name}`;
+            document.getElementById('pvp-status').textContent = getTranslation('pvp_match_found');
+            document.getElementById('pvp-players-names').textContent = `${players[0] ? players[0].name : 'PILOT'} VS ${this.opponent.name}`;
             document.getElementById('pvp-match-info').classList.remove('hidden');
 
             setTimeout(() => this.showCardSelection(), 2000);
@@ -1161,7 +1161,7 @@ class PVPManager {
         this.myCard = null;
         this.opponentCard = null;
         
-        document.getElementById('pvp-status').textContent = 'CHOOSE YOUR CARD';
+        document.getElementById('pvp-status').textContent = getTranslation('pvp_choose_card');
         const container = document.getElementById('pvp-cards-container');
         container.innerHTML = '';
         container.classList.remove('hidden');
@@ -1175,12 +1175,12 @@ class PVPManager {
         pvpCards.forEach(cardData => {
             const card = document.createElement('div');
             card.className = 'card';
-            card.innerHTML = `<h3>${cardData.name}</h3><p>${cardData.desc}</p>`;
+            card.innerHTML = `<h3>${getTranslation('card_' + cardData.id + '_name')}</h3><p>${getTranslation('card_' + cardData.id + '_desc')}</p>`;
             card.onclick = () => {
                 this.myCard = cardData;
                 this.socket.emit('select_card', { roomId: this.roomId, card: cardData });
                 container.classList.add('hidden');
-                document.getElementById('pvp-status').textContent = 'WAITING FOR OPPONENT...';
+                document.getElementById('pvp-status').textContent = getTranslation('pvp_waiting_opponent');
                 sfx.playPowerUp();
                 if (this.opponentCard) this.startRound();
             };
@@ -1242,7 +1242,7 @@ class PVPManager {
         this.round++;
         this.state = 'MATCHED';
         document.getElementById('pvp-overlay').classList.add('active');
-        document.getElementById('pvp-status').textContent = `ROUND ${this.round}`;
+        document.getElementById('pvp-status').textContent = `${getTranslation('pvp_round_label')} ${this.round}`;
         document.getElementById('pvp-score-board').classList.add('hidden');
         setTimeout(() => this.showCardSelection(), 2000);
     }
@@ -1251,7 +1251,13 @@ class PVPManager {
         this.state = 'IDLE';
         this.active = false;
         document.getElementById('pvp-overlay').classList.add('active');
-        document.getElementById('pvp-status').textContent = result;
+        
+        let translatedResult = result;
+        if (result === 'OPPONENT LEFT') translatedResult = getTranslation('opponent_left');
+        else if (result === 'YOU WIN!') translatedResult = getTranslation('you_win');
+        else if (result === 'YOU LOSE!') translatedResult = getTranslation('you_lose');
+        
+        document.getElementById('pvp-status').textContent = translatedResult;
         document.getElementById('pvp-match-info').classList.add('hidden');
         document.getElementById('pvp-cards-container').classList.add('hidden');
         document.getElementById('pvp-score-board').classList.add('hidden');
@@ -1693,20 +1699,24 @@ function showUpgradeScreen() {
 
 function updateUpgradeOverlay() {
     const player = players[currentUpgradingPlayer];
-    document.getElementById('upgrade-title').textContent = `${player.name.toUpperCase()} UPGRADE`;
+    document.getElementById('upgrade-title').textContent = `${player.name.toUpperCase()} ${getTranslation('upgrade_suffix')}`;
     
     // Update card levels
     const cards = document.querySelectorAll('.card');
+    const lvlWord = getTranslation('lvl_short');
+    const chanceWord = getTranslation('chance_word');
+    const spdWord = getTranslation('spd_short');
+    
     cards.forEach(card => {
         const type = card.dataset.upgrade;
         let info = '';
-        if (type === 'rapid') info = `LVL ${player.upgrades.rapid}/9`;
-        else if (type === 'explosion') info = `${Math.round(player.upgrades.explosion * 100)}% CHANCE (LVL ${Math.round(player.upgrades.explosion * 10)}/10)`;
-        else if (type === 'laser') info = `LVL ${player.upgrades.laserLvl}/10 (${Math.round(player.upgrades.laser * 100)}% CHANCE)`;
-        else if (type === 'freeze') info = `${Math.round(player.upgrades.freeze * 100)}% CHANCE (LVL ${Math.round(player.upgrades.freeze * 10)}/10)`;
-        else if (type === 'speed') info = `SPD ${Math.round(player.upgrades.speed)} (LVL ${Math.round(player.upgrades.speed - PLAYER_SPEED)}/10)`;
-        else if (type === 'shield') info = `LVL ${player.upgrades.shield}/10`;
-        else if (type === 'shockwave') info = `LVL ${player.upgrades.shockwave}/10`;
+        if (type === 'rapid') info = `${lvlWord} ${player.upgrades.rapid}/9`;
+        else if (type === 'explosion') info = `${Math.round(player.upgrades.explosion * 100)}% ${chanceWord} (${lvlWord} ${Math.round(player.upgrades.explosion * 10)}/10)`;
+        else if (type === 'laser') info = `${lvlWord} ${player.upgrades.laserLvl}/10 (${Math.round(player.upgrades.laser * 100)}% ${chanceWord})`;
+        else if (type === 'freeze') info = `${Math.round(player.upgrades.freeze * 100)}% ${chanceWord} (${lvlWord} ${Math.round(player.upgrades.freeze * 10)}/10)`;
+        else if (type === 'speed') info = `${spdWord} ${Math.round(player.upgrades.speed)} (${lvlWord} ${Math.round(player.upgrades.speed - PLAYER_SPEED)}/10)`;
+        else if (type === 'shield') info = `${lvlWord} ${player.upgrades.shield}/10`;
+        else if (type === 'shockwave') info = `${lvlWord} ${player.upgrades.shockwave}/10`;
         
         const infoEl = card.querySelector('.level-info');
         if (infoEl) infoEl.textContent = info;
@@ -1807,7 +1817,7 @@ function endGame() {
 
     updateLivesUI();
     const restartBtn = document.getElementById('restart-btn');
-    restartBtn.textContent = 'RETRY FROM START';
+    restartBtn.textContent = getTranslation('btn_retry_from_start');
 
     document.getElementById('final-p1-name').textContent = players[0].name;
 
@@ -1848,7 +1858,7 @@ async function loadScores() {
             const li = document.createElement('li');
             
             const nameSpan = document.createElement('span');
-            nameSpan.textContent = `${s.name} (${s.difficulty})`;
+            nameSpan.textContent = `${s.name} (${getTranslation('diff_' + s.difficulty) || s.difficulty})`;
             
             const scoreSpan = document.createElement('span');
             scoreSpan.textContent = s.score;
@@ -1866,11 +1876,11 @@ function togglePause() {
     if (gameState === 'PLAYING') {
         gameState = 'PAUSED';
         document.getElementById('pause-overlay').classList.add('active');
-        document.getElementById('pause-btn').textContent = 'RESUME';
+        document.getElementById('pause-btn').textContent = getTranslation('btn_resume');
     } else if (gameState === 'PAUSED') {
         gameState = 'PLAYING';
         document.getElementById('pause-overlay').classList.remove('active');
-        document.getElementById('pause-btn').textContent = 'PAUSE';
+        document.getElementById('pause-btn').textContent = getTranslation('btn_pause');
     }
 }
 
@@ -1985,15 +1995,34 @@ function initUIListeners() {
             });
         }
     };
-
     addTouchEvents('touch-move-left', 'left');
     addTouchEvents('touch-move-right', 'right');
     addTouchEvents('touch-shoot', 'shoot');
     addTouchEvents('touch-shield', 'shield');
     addTouchEvents('touch-shockwave', 'shockwave');
+
+    // Settings Overlay Listeners
+    safeAddListener('settings-btn', 'click', () => {
+        document.getElementById('settings-overlay').classList.add('active');
+    });
+    safeAddListener('close-settings', 'click', () => {
+        document.getElementById('settings-overlay').classList.remove('active');
+    });
+    
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            applyLanguage(btn.dataset.lang);
+        });
+    });
+
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            e.preventDefault();
+            applyTheme(btn.dataset.theme);
+        });
+    });
 }
-
-
 
 function initPlayerMode() {
     const p2Input = document.getElementById('p2-input');
@@ -2023,12 +2052,592 @@ function initPlayerMode() {
     }
 }
 
+// Localization and Theme State
+let currentLanguage = 'en';
+let currentTheme = 'blue';
+
+const LOCALIZATION = {
+    en: {
+        title: "ZAP THE THING!",
+        subtitle: "8-BIT REVENGE",
+        players_label: "PLAYERS:",
+        p1_name_label: "KIRBY (P1):",
+        p2_name_label: "MARIO (P2):",
+        difficulty_label: "DIFFICULTY:",
+        diff_low: "LOW",
+        diff_medium: "MEDIUM",
+        diff_hard: "HARD",
+        mobile_note: "MOBILE: 1 PLAYER ONLY",
+        launch_mission: "LAUNCH MISSION",
+        how_to_play: "HOW TO PLAY",
+        settings: "SETTINGS",
+        top_guns: "TOP GUNS",
+        p1_score_label: "P1: ",
+        p2_score_label: "P2: ",
+        level_label: "LEVEL: ",
+        btn_pause: "PAUSE",
+        btn_resume: "RESUME",
+        btn_quit: "QUIT",
+        paused_title: "PAUSED",
+        paused_desc: "PRESS 'P' OR CLICK TO RESUME",
+        upgrade_title: "PLAYER 1 UPGRADE",
+        upgrade_suffix: "UPGRADE",
+        upgrade_rapid_title: "RAPID FIRE",
+        upgrade_rapid_desc: "Reload faster",
+        upgrade_explosion_title: "EXPLOSION",
+        upgrade_explosion_desc: "Area damage chance",
+        upgrade_laser_title: "LASER",
+        upgrade_laser_desc: "Piercing beam chance",
+        upgrade_thrust_title: "THRUST",
+        upgrade_thrust_desc: "Increase movement speed",
+        upgrade_shield_title: "FORCE FIELD",
+        upgrade_shield_desc: "Press S/Down to block hits",
+        upgrade_wave_title: "SHOCKWAVE",
+        upgrade_wave_desc: "Press J/Slash to sweep screen",
+        upgrade_freeze_title: "FREEZE",
+        upgrade_freeze_desc: "Freeze enemy in front",
+        pvp_matchmaking: "MATCHMAKING...",
+        pvp_score: "SCORE",
+        pvp_round: "ROUND",
+        controls_hint: "P1: A/D+W | P2: ARROWS L/R+UP | P: PAUSE",
+        btn_zap: "ZAP",
+        btn_shield: "SHIELD",
+        btn_wave: "WAVE",
+        briefing_title: "MISSION BRIEFING",
+        movement_title: "MOVEMENT",
+        brief_movement_p1: "<strong>P1:</strong> A / D (Side) | SPACE (Thrust Forward)",
+        brief_movement_p2: "<strong>P2:</strong> ← / → (Side)",
+        brief_movement_note: "* Ships drift back to the baseline automatically.",
+        abilities_title: "ABILITIES",
+        brief_abilities_tap: "<strong>TAP:</strong> Normal Shot",
+        brief_abilities_laser: "<strong>DOUBLE-TAP:</strong> Laser Beam (2s Cooldown)",
+        brief_abilities_p1p2: "P1: W | P2: ↑",
+        brief_abilities_shield: "<strong>SHIELD:</strong> Press S (P1) or Down (P2) if unlocked",
+        brief_abilities_wave: "<strong>SHOCKWAVE:</strong> Press J (P1) or Slash (P2) to sweep screen",
+        objectives_title: "OBJECTIVES",
+        brief_objectives_survive: "<strong>SURVIVE:</strong> Clear waves to reach the Boss (Every 10 Levels).",
+        brief_objectives_health: "<strong>HEALTH:</strong> You have 3 shared Hearts (❤️). Get hit, lose a heart. Lose all 3, Game Over.",
+        brief_objectives_upgrade: "<strong>UPGRADE:</strong> Choose a power-up after every round.",
+        back_to_base: "BACK TO BASE",
+        settings_title: "SETTINGS",
+        language_label: "LANGUAGE",
+        theme_label: "BACKGROUND COLOR",
+        theme_space_blue: "SPACE BLUE",
+        theme_retro_black: "RETRO BLACK",
+        theme_cyber_purple: "CYBER PURPLE",
+        theme_matrix_green: "MATRIX GREEN",
+        theme_crimson_red: "CRIMSON RED",
+        final_stand: "FINAL STAND",
+        btn_redeploy: "RE-DEPLOY",
+        btn_retry_from_start: "RETRY FROM START",
+        lvl_short: "LVL",
+        chance_word: "CHANCE",
+        spd_short: "SPD",
+        pvp_searching: "SEARCHING FOR OPPONENT...",
+        pvp_match_found: "MATCH FOUND!",
+        pvp_choose_card: "CHOOSE YOUR CARD",
+        pvp_waiting_opponent: "WAITING FOR OPPONENT...",
+        pvp_round_label: "ROUND",
+        opponent_left: "OPPONENT LEFT",
+        you_win: "YOU WIN!",
+        you_lose: "YOU LOSE!",
+        card_tank_name: "TANK",
+        card_tank_desc: "+2 LIVES",
+        card_scout_name: "SCOUT",
+        card_scout_desc: "+50% SPEED",
+        card_glass_name: "GLASS CANNON",
+        card_glass_desc: "INSTANT SHOOT"
+    },
+    es: {
+        title: "¡ZAPEA AL INVASOR!",
+        subtitle: "VENGANZA 8-BIT",
+        players_label: "JUGADORES:",
+        p1_name_label: "KIRBY (P1):",
+        p2_name_label: "MARIO (P2):",
+        difficulty_label: "DIFICULTAD:",
+        diff_low: "BAJA",
+        diff_medium: "MEDIA",
+        diff_hard: "ALTA",
+        mobile_note: "MÓVIL: SOLO 1 JUGADOR",
+        launch_mission: "INICIAR MISIÓN",
+        how_to_play: "CÓMO JUGAR",
+        settings: "AJUSTES",
+        top_guns: "MEJORES PILOTOS",
+        p1_score_label: "P1: ",
+        p2_score_label: "P2: ",
+        level_label: "NIVEL: ",
+        btn_pause: "PAUSA",
+        btn_resume: "REANUDAR",
+        btn_quit: "SALIR",
+        paused_title: "PAUSADO",
+        paused_desc: "PRESIONA 'P' O HAZ CLIC PARA REANUDAR",
+        upgrade_title: "MEJORA JUGADOR 1",
+        upgrade_suffix: "MEJORA",
+        upgrade_rapid_title: "FUEGO RÁPIDO",
+        upgrade_rapid_desc: "Recarga más rápido",
+        upgrade_explosion_title: "EXPLOSIÓN",
+        upgrade_explosion_desc: "Probabilidad de daño de área",
+        upgrade_laser_title: "LÁSER",
+        upgrade_laser_desc: "Probabilidad de rayo perforador",
+        upgrade_thrust_title: "PROPULSIÓN",
+        upgrade_thrust_desc: "Aumenta velocidad de movimiento",
+        upgrade_shield_title: "CAMPO DE FUERZA",
+        upgrade_shield_desc: "Presiona S/Abajo para bloquear",
+        upgrade_wave_title: "ONDA DE CHOQUE",
+        upgrade_wave_desc: "Presiona J/Slash para limpiar pantalla",
+        upgrade_freeze_title: "CONGELAR",
+        upgrade_freeze_desc: "Congela al enemigo de enfrente",
+        pvp_matchmaking: "BUSCANDO PARTIDA...",
+        pvp_score: "SCORE",
+        pvp_round: "RONDA",
+        controls_hint: "P1: A/D+W | P2: FLECHAS L/R+UP | P: PAUSA",
+        btn_zap: "ZAP",
+        btn_shield: "ESCUDO",
+        btn_wave: "ONDA",
+        briefing_title: "INSTRUCCIONES",
+        movement_title: "MOVIMIENTO",
+        brief_movement_p1: "<strong>P1:</strong> A / D (Lados) | ESPACIO (Propulsar)",
+        brief_movement_p2: "<strong>P2:</strong> ← / → (Lados)",
+        brief_movement_note: "* Las naves retroceden automáticamente.",
+        abilities_title: "HABILIDADES",
+        brief_abilities_tap: "<strong>PULSACIÓN:</strong> Disparo Normal",
+        brief_abilities_laser: "<strong>DOBLE PULSACIÓN:</strong> Rayo Láser (Recup. 2s)",
+        brief_abilities_p1p2: "P1: W | P2: ↑",
+        brief_abilities_shield: "<strong>ESCUDO:</strong> Presiona S (P1) o Abajo (P2) si está desbloqueado",
+        brief_abilities_wave: "<strong>ONDA:</strong> Presiona J (P1) o Slash (P2) para barrer pantalla",
+        objectives_title: "OBJETIVOS",
+        brief_objectives_survive: "<strong>SOBREVIVE:</strong> Limpia oleadas para llegar al Jefe (Cada 10 niveles).",
+        brief_objectives_health: "<strong>VIDA:</strong> 3 corazones compartidos (❤️). Si te golpean, pierdes uno. Cero corazones es Fin de Juego.",
+        brief_objectives_upgrade: "<strong>MEJORA:</strong> Elige un potenciador después de cada ronda.",
+        back_to_base: "VOLVER A LA BASE",
+        settings_title: "AJUSTES",
+        language_label: "IDIOMA",
+        theme_label: "COLOR DE FONDO",
+        theme_space_blue: "AZUL ESPACIAL",
+        theme_retro_black: "NEGRO RETRO",
+        theme_cyber_purple: "CYBERPUNK",
+        theme_matrix_green: "VERDE MATRIX",
+        theme_crimson_red: "CORAL ROJO",
+        final_stand: "ÚLTIMO INTENTO",
+        btn_redeploy: "REINICIAR",
+        btn_retry_from_start: "REINTENTAR DEL INICIO",
+        lvl_short: "NV",
+        chance_word: "PROB.",
+        spd_short: "VEL",
+        pvp_searching: "BUSCANDO OPONENTE...",
+        pvp_match_found: "¡PARTIDA ENCONTRADA!",
+        pvp_choose_card: "ELIGE TU CARTA",
+        pvp_waiting_opponent: "ESPERANDO AL OPONENTE...",
+        pvp_round_label: "RONDA",
+        opponent_left: "EL OPONENTE SE FUE",
+        you_win: "¡TÚ GANAS!",
+        you_lose: "¡TÚ PIERDES!",
+        card_tank_name: "TANQUE",
+        card_tank_desc: "+2 VIDAS",
+        card_scout_name: "EXPLORADOR",
+        card_scout_desc: "+50% VELOCIDAD",
+        card_glass_name: "CAÑÓN CRISTAL",
+        card_glass_desc: "DISPARO INSTANTÁNEO"
+    },
+    fr: {
+        title: "ZAPPER LA CHOSE !",
+        subtitle: "REVANCHE 8-BIT",
+        players_label: "JOUEURS :",
+        p1_name_label: "KIRBY (J1) :",
+        p2_name_label: "MARIO (J2) :",
+        difficulty_label: "DIFFICULTÉ :",
+        diff_low: "FACILE",
+        diff_medium: "MOYEN",
+        diff_hard: "DIFFICILE",
+        mobile_note: "MOBILE : 1 JOUEUR UNIQUEMENT",
+        launch_mission: "LANCER MISSION",
+        how_to_play: "COMMENT JOUER",
+        settings: "PARAMÈTRES",
+        top_guns: "MEILLEURS SCORES",
+        p1_score_label: "J1 : ",
+        p2_score_label: "J2 : ",
+        level_label: "NIVEAU : ",
+        btn_pause: "PAUSE",
+        btn_resume: "REPRENDRE",
+        btn_quit: "QUITTER",
+        paused_title: "PAUSE",
+        paused_desc: "APPUYEZ SUR 'P' OU CLIQUEZ POUR REPRENDRE",
+        upgrade_title: "AMÉLIORATION JOUEUR 1",
+        upgrade_suffix: "AMÉLIORATION",
+        upgrade_rapid_title: "TIR RAPIDE",
+        upgrade_rapid_desc: "Recharger plus vite",
+        upgrade_explosion_title: "EXPLOSION",
+        upgrade_explosion_desc: "Chance de dégâts de zone",
+        upgrade_laser_title: "LASER",
+        upgrade_laser_desc: "Chance de rayon perforant",
+        upgrade_thrust_title: "POUSSÉE",
+        upgrade_thrust_desc: "Augmenter la vitesse",
+        upgrade_shield_title: "CHAMP DE FORCE",
+        upgrade_shield_desc: "S/Bas pour bloquer les coups",
+        upgrade_wave_title: "ONDE DE CHOC",
+        upgrade_wave_desc: "J/Slash pour balayer l'écran",
+        upgrade_freeze_title: "GELER",
+        upgrade_freeze_desc: "Geler l'ennemi en face",
+        pvp_matchmaking: "RECHERCHE DE PARTIE...",
+        pvp_score: "SCORE",
+        pvp_round: "MANCHE",
+        controls_hint: "J1 : A/D+W | J2 : FLÈCHES L/R+HAUT | P : PAUSE",
+        btn_zap: "ZAP",
+        btn_shield: "BOUCLIER",
+        btn_wave: "ONDE",
+        briefing_title: "BRIEFING MISSION",
+        movement_title: "MOUVEMENT",
+        brief_movement_p1: "<strong>J1 :</strong> A / D (Côtés) | ESPACE (Propulsion)",
+        brief_movement_p2: "<strong>J2 :</strong> ← / → (Côtés)",
+        brief_movement_note: "* Les vaisseaux reviennent automatiquement.",
+        abilities_title: "CAPACITÉS",
+        brief_abilities_tap: "<strong>TAP :</strong> Tir Normal",
+        brief_abilities_laser: "<strong>DOUBLE TAP :</strong> Rayon Laser (Recup. 2s)",
+        brief_abilities_p1p2: "J1 : W | J2 : ↑",
+        brief_abilities_shield: "<strong>BOUCLIER :</strong> Appuyez sur S (J1) ou Bas (J2) si déverrouillé",
+        brief_abilities_wave: "<strong>ONDE :</strong> Appuyez sur J (J1) ou Slash (J2) pour nettoyer l'écran",
+        objectives_title: "OBJECTIFS",
+        brief_objectives_survive: "<strong>SURVIVRE :</strong> Éliminez les vagues pour atteindre le Boss (Tous les 10 niv.).",
+        brief_objectives_health: "<strong>SANTÉ :</strong> 3 cœurs partagés (❤️). Touché, perdez un cœur. À 0, Game Over.",
+        brief_objectives_upgrade: "<strong>AMÉLIORATION :</strong> Choisissez un bonus après chaque manche.",
+        back_to_base: "RETOUR À LA BASE",
+        settings_title: "PARAMÈTRES",
+        language_label: "LANGUE",
+        theme_label: "COULEUR DE FONDO",
+        theme_space_blue: "BLEU SPATIAL",
+        theme_retro_black: "NOIR RETRO",
+        theme_cyber_purple: "CYBER VIOLET",
+        theme_matrix_green: "VERT MATRIX",
+        theme_crimson_red: "ROUGE CORAIL",
+        final_stand: "COMBAT FINAL",
+        btn_redeploy: "RE-DÉPLOYER",
+        btn_retry_from_start: "RECOMMENCER DE ZÉRO",
+        lvl_short: "NIV",
+        chance_word: "CHANCE",
+        spd_short: "VIT",
+        pvp_searching: "RECHERCHE D'ADVERSAIRE...",
+        pvp_match_found: "PARTIE TROUVÉE !",
+        pvp_choose_card: "CHOISISSEZ VOTRE CARTE",
+        pvp_waiting_opponent: "ATTENTE DE L'ADVERSAIRE...",
+        pvp_round_label: "MANCHE",
+        opponent_left: "L'ADVERSAIRE EST PARTI",
+        you_win: "VOUS GAGNEZ !",
+        you_lose: "VOUS AVEZ PERDU !",
+        card_tank_name: "BLINDÉ",
+        card_tank_desc: "+2 VIES",
+        card_scout_name: "ÉCLAIREUR",
+        card_scout_desc: "+50% VITESSE",
+        card_glass_name: "CANON DE VERRE",
+        card_glass_desc: "TIR INSTANTANÉ"
+    },
+    de: {
+        title: "ZAP DAS DING!",
+        subtitle: "8-BIT-RACHE",
+        players_label: "SPIELER:",
+        p1_name_label: "KIRBY (S1):",
+        p2_name_label: "MARIO (S2):",
+        difficulty_label: "SCHWIERIGKEIT:",
+        diff_low: "LEICHT",
+        diff_medium: "MITTEL",
+        diff_hard: "SCHWER",
+        mobile_note: "MOBIL: NUR 1 SPIELER",
+        launch_mission: "MISSION STARTEN",
+        how_to_play: "SPIELANLEITUNG",
+        settings: "EINSTELLUNGEN",
+        top_guns: "TOP-PILOTEN",
+        p1_score_label: "S1: ",
+        p2_score_label: "S2: ",
+        level_label: "LEVEL: ",
+        btn_pause: "PAUSE",
+        btn_resume: "WEITER",
+        btn_quit: "BEENDEN",
+        paused_title: "PAUSIERT",
+        paused_desc: "DRÜCKE 'P' ODER KLICKE ZUM FORTSETZEN",
+        upgrade_title: "SPIELER 1 UPGRADE",
+        upgrade_suffix: "UPGRADE",
+        upgrade_rapid_title: "SCHNELLFEUER",
+        upgrade_rapid_desc: "Schneller nachladen",
+        upgrade_explosion_title: "EXPLOSION",
+        upgrade_explosion_desc: "Chance auf Flächenschaden",
+        upgrade_laser_title: "LASER",
+        upgrade_laser_desc: "Chance auf durchdringenden Strahl",
+        upgrade_thrust_title: "SCHUB",
+        upgrade_thrust_desc: "Geschwindigkeit erhöhen",
+        upgrade_shield_title: "KRAFTFELD",
+        upgrade_shield_desc: "S/Runter zum Blocken",
+        upgrade_wave_title: "SCHOCKWELLE",
+        upgrade_wave_desc: "J/Schrägstrich zum Bildschirmfegen",
+        upgrade_freeze_title: "EINFRIEREN",
+        upgrade_freeze_desc: "Gegner vor dir einfrieren",
+        pvp_matchmaking: "SPIELERSUCHE...",
+        pvp_score: "STAND",
+        pvp_round: "RUNDE",
+        controls_hint: "S1: A/D+W | S2: PFEILE L/R+UP | P: PAUSE",
+        btn_zap: "ZAP",
+        btn_shield: "SCHILD",
+        btn_wave: "WELLE",
+        briefing_title: "EINWEISUNG",
+        movement_title: "BEWEGUNG",
+        brief_movement_p1: "<strong>S1:</strong> A / D (Seite) | LEERTASTE (Schub vorwärts)",
+        brief_movement_p2: "<strong>S2:</strong> ← / → (Seite)",
+        brief_movement_note: "* Schiffe driften automatisch zurück.",
+        abilities_title: "FÄHIGKEITEN",
+        brief_abilities_tap: "<strong>TIPPEN:</strong> Normaler Schuss",
+        brief_abilities_laser: "<strong>DOPPELTIPPEN:</strong> Laserstrahl (2s Abklingzeit)",
+        brief_abilities_p1p2: "S1: W | S2: ↑",
+        brief_abilities_shield: "<strong>SCHILD:</strong> S (S1) oder Runter (S2) falls freigeschaltet",
+        brief_abilities_wave: "<strong>WELLE:</strong> J (S1) oder Schrägstrich (S2) zum Fegen",
+        objectives_title: "MISSIONSZIELE",
+        brief_objectives_survive: "<strong>ÜBERLEBEN:</strong> Wellen abschließen für Boss (Alle 10 Levels).",
+        brief_objectives_health: "<strong>LEBEN:</strong> 3 geteilte Herzen (❤️). Treffer kostet ein Herz. Bei 0: Game Over.",
+        brief_objectives_upgrade: "<strong>UPGRADE:</strong> Wähle ein Power-up nach jeder Runde.",
+        back_to_base: "ZURÜCK ZUR BASIS",
+        settings_title: "EINSTELLUNGEN",
+        language_label: "SPRACHE",
+        theme_label: "HINTERGRUNDFARBE",
+        theme_space_blue: "WELTRAUM BLAU",
+        theme_retro_black: "RETRO SCHWARZ",
+        theme_cyber_purple: "CYBER LILA",
+        theme_matrix_green: "MATRIX GRÜN",
+        theme_crimson_red: "CRIMSON ROT",
+        final_stand: "LETZTER STAND",
+        btn_redeploy: "NEUSTART",
+        btn_retry_from_start: "VON ANFANG AN RETRY",
+        lvl_short: "LVL",
+        chance_word: "CHANCE",
+        spd_short: "GES",
+        pvp_searching: "GEGNERSUCHE...",
+        pvp_match_found: "SPIEL GEFUNDEN!",
+        pvp_choose_card: "WÄHLE DEINE KARTE",
+        pvp_waiting_opponent: "WARTE AUF GEGNER...",
+        pvp_round_label: "RUNDE",
+        opponent_left: "GEGNER HAT VERLASSEN",
+        you_win: "DU HAST GEWONNEN!",
+        you_lose: "DU HAST VERLOREN!",
+        card_tank_name: "PANZER",
+        card_tank_desc: "+2 LEBEN",
+        card_scout_name: "SPÄHER",
+        card_scout_desc: "+50% SPEED",
+        card_glass_name: "GLASKANONE",
+        card_glass_desc: "SOFORTIGES SCHIESSEN"
+    },
+    ja: {
+        title: "ザップ・ザ・シング！",
+        subtitle: "8ビットのリベンジ",
+        players_label: "プレイヤー数:",
+        p1_name_label: "カービィ (P1):",
+        p2_name_label: "マリオ (P2):",
+        difficulty_label: "難易度:",
+        diff_low: "イージー",
+        diff_medium: "ノーマル",
+        diff_hard: "ハード",
+        mobile_note: "モバイル: 1プレイヤー専用",
+        launch_mission: "ミッション開始",
+        how_to_play: "遊び方",
+        settings: "設定",
+        top_guns: "トップガン",
+        p1_score_label: "P1: ",
+        p2_score_label: "P2: ",
+        level_label: "レベル: ",
+        btn_pause: "一時停止",
+        btn_resume: "再開",
+        btn_quit: "終了",
+        paused_title: "一時停止中",
+        paused_desc: "Pキーかクリックで再開",
+        upgrade_title: "プレイヤー1のアップグレード",
+        upgrade_suffix: "のアップグレード",
+        upgrade_rapid_title: "連射スピード",
+        upgrade_rapid_desc: "リロード速度アップ",
+        upgrade_explosion_title: "エクスプロージョン",
+        upgrade_explosion_desc: "範囲ダメージの確率発生",
+        upgrade_laser_title: "レーザー",
+        upgrade_laser_desc: "貫通ビーム of 確率発生",
+        upgrade_thrust_title: "スラスト",
+        upgrade_thrust_desc: "移動スピードアップ",
+        upgrade_shield_title: "フォースフィールド",
+        upgrade_shield_desc: "Sか↓キーで被弾をブロック",
+        upgrade_wave_title: "ショックウェーブ",
+        upgrade_wave_desc: "Jか/キーで敵を一掃",
+        upgrade_freeze_title: "フリーズ",
+        upgrade_freeze_desc: "目の前の敵をフリーズ",
+        pvp_matchmaking: "マッチング中...",
+        pvp_score: "スコア",
+        pvp_round: "ラウンド",
+        controls_hint: "P1: A/D+W | P2: 矢印キー L/R+UP | P: 一時停止",
+        btn_zap: "ザップ",
+        btn_shield: "シールド",
+        btn_wave: "ウェーブ",
+        briefing_title: "作戦説明",
+        movement_title: "操作方法",
+        brief_movement_p1: "<strong>P1:</strong> A / D (左右) | スペース (前進)",
+        brief_movement_p2: "<strong>P2:</strong> ← / → (左右)",
+        brief_movement_note: "* 自機は自動的に元の位置に戻ります。",
+        abilities_title: "アビリティ",
+        brief_abilities_tap: "<strong>短押し:</strong> 通常ショット",
+        brief_abilities_laser: "<strong>ダブルクリック:</strong> 貫通レーザー (2秒冷却)",
+        brief_abilities_p1p2: "P1: W | P2: ↑",
+        brief_abilities_shield: "<strong>シールド:</strong> アンロック時 S (P1) / ↓ (P2)",
+        brief_abilities_wave: "<strong>ショックウェーブ:</strong> J (P1) / / (P2) で敵を一掃",
+        objectives_title: "目的",
+        brief_objectives_survive: "<strong>生存:</strong> 敵を倒してボスを呼び出す (10レベルごと)。",
+        brief_objectives_health: "<strong>ライフ:</strong> 3つの共有ライフ (❤️)。被弾でマイナス1、すべて失うとゲームオーバー。",
+        brief_objectives_upgrade: "<strong>強化:</strong> ラウンドクリアごとにパワーアップを選択。",
+        back_to_base: "ベースに戻る",
+        settings_title: "設定",
+        language_label: "言語",
+        theme_label: "背景カラー",
+        theme_space_blue: "スペースブルー",
+        theme_retro_black: "レトロブラック",
+        theme_cyber_purple: "サイバーパープル",
+        theme_matrix_green: "マトリックスグリーン",
+        theme_crimson_red: "クリムゾンレッド",
+        final_stand: "ファイナルスタンド",
+        btn_redeploy: "再出撃",
+        btn_retry_from_start: "最初からリトライ",
+        lvl_short: "LV",
+        chance_word: "確率",
+        spd_short: "速度",
+        pvp_searching: "対戦相手を探しています...",
+        pvp_match_found: "マッチング完了！",
+        pvp_choose_card: "カードを選んでください",
+        pvp_waiting_opponent: "対戦相手を待っています...",
+        pvp_round_label: "ラウンド",
+        opponent_left: "対戦相手が退出しました",
+        you_win: "あなたの勝ち！",
+        you_lose: "あなたの負け！",
+        card_tank_name: "タンク",
+        card_tank_desc: "+2 ライフ",
+        card_scout_name: "スカウト",
+        card_scout_desc: "+50% 速度",
+        card_glass_name: "ガラスの砲身",
+        card_glass_desc: "即時射撃"
+    }
+};
+
+function getTranslation(key) {
+    return LOCALIZATION[currentLanguage]?.[key] || LOCALIZATION['en']?.[key] || key;
+}
+
+function applyLanguage(lang) {
+    if (!LOCALIZATION[lang]) lang = 'en';
+    currentLanguage = lang;
+    localStorage.setItem('selected-lang', lang);
+
+    document.querySelectorAll('[data-lang-key]').forEach(el => {
+        const key = el.dataset.langKey;
+        if (LOCALIZATION[lang][key]) {
+            if (LOCALIZATION['en'][key].includes('<') || LOCALIZATION[lang][key].includes('<')) {
+                el.innerHTML = LOCALIZATION[lang][key];
+            } else {
+                el.textContent = LOCALIZATION[lang][key];
+            }
+        }
+    });
+
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.lang === lang) {
+            btn.classList.add('active');
+        }
+    });
+
+    updateDynamicTexts();
+}
+
+function applyTheme(themeName) {
+    const themes = {
+        'blue': {
+            '--bg-color': '#0d1b2a',
+            '--accent-blue': '#3a86ff',
+            '--text-color': '#e0e1dd',
+            '--deep-blue': '#0d1b2a',
+            '--bg-card': '#1b263b',
+            '--canvas-bg': '#000000',
+            '--body-bg': '#000000'
+        },
+        'black': {
+            '--bg-color': '#111111',
+            '--accent-blue': '#ffffff',
+            '--text-color': '#e0e1dd',
+            '--deep-blue': '#111111',
+            '--bg-card': '#222222',
+            '--canvas-bg': '#000000',
+            '--body-bg': '#000000'
+        },
+        'purple': {
+            '--bg-color': '#240046',
+            '--accent-blue': '#ff006e',
+            '--text-color': '#ffbe0b',
+            '--deep-blue': '#240046',
+            '--bg-card': '#3c096c',
+            '--canvas-bg': '#10002b',
+            '--body-bg': '#0f021a'
+        },
+        'green': {
+            '--bg-color': '#0d2611',
+            '--accent-blue': '#00ff66',
+            '--text-color': '#00ff66',
+            '--deep-blue': '#0d2611',
+            '--bg-card': '#1b4d22',
+            '--canvas-bg': '#001102',
+            '--body-bg': '#020d04'
+        },
+        'red': {
+            '--bg-color': '#2d0a0d',
+            '--accent-blue': '#ff003c',
+            '--text-color': '#ffb3c1',
+            '--deep-blue': '#2d0a0d',
+            '--bg-card': '#4a151b',
+            '--canvas-bg': '#180406',
+            '--body-bg': '#140204'
+        }
+    };
+    
+    const theme = themes[themeName] || themes['blue'];
+    currentTheme = themeName;
+    localStorage.setItem('selected-theme', themeName);
+
+    const root = document.documentElement;
+    for (const [key, value] of Object.entries(theme)) {
+        root.style.setProperty(key, value);
+    }
+    
+    document.querySelectorAll('.theme-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.theme === themeName) {
+            btn.classList.add('active');
+        }
+    });
+}
+
+function updateDynamicTexts() {
+    const pauseBtn = document.getElementById('pause-btn');
+    if (pauseBtn) {
+        pauseBtn.textContent = (gameState === 'PAUSED') ? getTranslation('btn_resume') : getTranslation('btn_pause');
+    }
+    
+    const restartBtn = document.getElementById('restart-btn');
+    if (restartBtn) {
+        restartBtn.textContent = (totalLives > 0) ? getTranslation('btn_redeploy') : getTranslation('btn_retry_from_start');
+    }
+
+    if (gameState === 'UPGRADING' && players && players[currentUpgradingPlayer]) {
+        updateUpgradeOverlay();
+    }
+}
 
 // Initial Load
 function initAll() {
     initUIListeners();
     initPlayerMode();
     loadScores();
+
+    // Load saved settings
+    const savedLang = localStorage.getItem('selected-lang') || 'en';
+    const savedTheme = localStorage.getItem('selected-theme') || 'blue';
+    applyLanguage(savedLang);
+    applyTheme(savedTheme);
+
     console.log("Game UI initialized!");
 }
 
