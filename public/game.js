@@ -230,6 +230,7 @@ let boss = null;
 let playerBullets = [];
 let playerShockwaves = [];
 let invaderBullets = [];
+let drones = [];
 let level = 1;
 let animationId;
 let currentUpgradingPlayer = 0;
@@ -319,7 +320,8 @@ class Player {
             freeze: 0, // Chance of freezing enemies in place
             speed: PLAYER_SPEED, // Ship movement speed
             shield: 0, // Number of attacks the shield can block
-            shockwave: 0 // Number of shockwaves you can fire
+            shockwave: 0, // Number of shockwaves you can fire
+            drone: 0 // Number of helper drones you can spawn
         };
 
         this.activeShields = 0;
@@ -330,6 +332,7 @@ class Player {
         this.laserCooldown = 0;
         this.lastShootPressTime = 0;
         this.shootWasDown = false;
+        this.xWasDown = false;
 
     }
 
@@ -428,8 +431,11 @@ class Player {
         
         if (this.invincible > 0) this.invincible--;
 
-        if ((keys[this.keys.left] || (this.id === 1 && touchState.left)) && this.x > 0) this.x -= this.upgrades.speed;
-        if ((keys[this.keys.right] || (this.id === 1 && touchState.right)) && this.x < canvas.width - this.width) this.x += this.upgrades.speed;
+        const isLeft = keys[this.keys.left] || (this.id === 1 && playerMode === 1 && keys['ArrowLeft']) || (this.id === 1 && touchState.left);
+        const isRight = keys[this.keys.right] || (this.id === 1 && playerMode === 1 && keys['ArrowRight']) || (this.id === 1 && touchState.right);
+
+        if (isLeft && this.x > 0) this.x -= this.upgrades.speed;
+        if (isRight && this.x < canvas.width - this.width) this.x += this.upgrades.speed;
 
         // Forward movement (Space)
         if (this.id === 1 && keys['Space'] && this.y > 50) {
@@ -438,10 +444,19 @@ class Player {
             this.y += 2; // Automatic drift back to baseline
         }
 
+        // Drone spawn logic (Press X)
+        if (this.id === 1 && keys['KeyX'] && !this.xWasDown) {
+            this.xWasDown = true;
+            this.spawnDrone();
+        }
+        if (this.id === 1 && !keys['KeyX']) {
+            this.xWasDown = false;
+        }
+
         // Shield Logic
         if (this.shieldCooldown > 0) this.shieldCooldown--;
 
-        const isShieldDown = keys[this.keys.shield] || (this.id === 1 && touchState.shield);
+        const isShieldDown = keys[this.keys.shield] || (this.id === 1 && playerMode === 1 && keys['ArrowDown']) || (this.id === 1 && touchState.shield);
         if (isShieldDown && this.upgrades.shield > 0 && this.shieldCooldown <= 0 && this.activeShields === 0) {
             this.activeShields = this.upgrades.shield;
             sfx.playPowerUp(); // Use an existing sound for activation
@@ -450,7 +465,7 @@ class Player {
         // Shockwave Logic
         if (this.shockwaveCooldown > 0) this.shockwaveCooldown--;
 
-        const isShockwaveDown = keys[this.keys.shockwave] || (this.id === 1 && touchState.shockwave);
+        const isShockwaveDown = keys[this.keys.shockwave] || (this.id === 1 && playerMode === 1 && keys['Slash']) || (this.id === 1 && touchState.shockwave);
         if (isShockwaveDown && this.upgrades.shockwave > 0 && this.shockwaveCooldown <= 0) {
             playerShockwaves.push(new Shockwave(this.id, this.upgrades.shockwave));
             sfx.playExplosion(); 
@@ -459,7 +474,7 @@ class Player {
 
         if (this.laserCooldown > 0) this.laserCooldown--;
 
-        const isShootDown = keys[this.keys.shoot] || (this.id === 1 && touchState.shoot);
+        const isShootDown = keys[this.keys.shoot] || (this.id === 1 && playerMode === 1 && keys['ArrowUp']) || (this.id === 1 && touchState.shoot);
         const shootPressedThisFrame = isShootDown && !this.shootWasDown;
         this.shootWasDown = isShootDown;
 
@@ -495,6 +510,15 @@ class Player {
         if (this.cooldown > 0) this.cooldown--;
 
     }
+
+    spawnDrone() {
+        if (!this.alive) return;
+        const activeCount = drones.filter(d => d.ownerId === this.id && d.alive).length;
+        if (activeCount < this.upgrades.drone) {
+            drones.push(new Drone(this.id, this.x + this.width / 2 - 12, this.y - 20));
+            sfx.playPowerUp();
+        }
+    }
 }
 
 class Shockwave {
@@ -525,6 +549,65 @@ class Shockwave {
 
     update() {
         this.x += this.speed;
+    }
+}
+
+class Drone {
+    constructor(ownerId, x, y) {
+        this.ownerId = ownerId;
+        this.x = x;
+        this.y = y;
+        this.width = 24;
+        this.height = 24;
+        this.color = '#ff003c'; // Red helper color
+        this.cooldown = 0;
+        this.speed = 3;
+        this.direction = Math.random() < 0.5 ? 1 : -1; // Random initial direction
+        this.alive = true;
+    }
+
+    update() {
+        if (!this.alive) return;
+
+        // Move horizontally alongside the player
+        this.x += this.speed * this.direction;
+        if (this.x < 20 || this.x > canvas.width - this.width - 20) {
+            this.direction *= -1;
+        }
+
+        // Maintain height near the player baseline
+        this.y = canvas.height - 60;
+
+        // Automatically fire normal player bullets upwards at a steady interval
+        if (this.cooldown <= 0) {
+            const b = new Bullet(this.x + this.width / 2 - 2, this.y, this.color, -7, this.ownerId, 'normal');
+            playerBullets.push(b);
+            sfx.playShootPlayer();
+            this.cooldown = 45; // Shoots every 45 frames (0.75s)
+        }
+
+        if (this.cooldown > 0) this.cooldown--;
+    }
+
+    draw() {
+        if (!this.alive) return;
+
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // Draw helper drone (Red spaceship saucer shape)
+        ctx.fillStyle = this.color;
+        ctx.beginPath();
+        ctx.moveTo(this.width / 2, 0);
+        ctx.lineTo(this.width, this.height * 0.7);
+        ctx.lineTo(0, this.height * 0.7);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.fillStyle = '#ff5c8a'; // Glowing light core
+        ctx.fillRect(this.width * 0.2, this.height * 0.7, this.width * 0.6, this.height * 0.3);
+
+        ctx.restore();
     }
 }
 
@@ -1353,6 +1436,7 @@ function startGame() {
     playerBullets = [];
     playerShockwaves = [];
     invaderBullets = [];
+    drones = [];
     level = 1;
     initInvaders();
 
@@ -1470,6 +1554,13 @@ function gameLoop() {
         invaderDirection *= -1;
         invaders.forEach(inv => inv.y += 20);
     }
+
+    // Update & Draw Drones
+    drones = drones.filter(d => d.alive);
+    drones.forEach(d => {
+        d.update();
+        d.draw();
+    });
 
     // Update & Draw Bullets
     playerBullets = playerBullets.filter(b => (b.type === 'laser' ? b.life > 0 : b.y > 0));
@@ -1607,6 +1698,27 @@ function gameLoop() {
                 }
             }
         });
+
+        // Check collision with drones
+        drones.forEach(d => {
+            if (d.alive) {
+                if (b.x < d.x + d.width && b.x + b.width > d.x && b.y < d.y + d.height && b.y + b.height > d.y) {
+                    if (b.type === 'axe') {
+                        if (!b.exploded) {
+                            d.alive = false;
+                            b.exploded = true;
+                            sfx.playExplosion();
+                            createFirework(b.x + b.width / 2, b.y + b.height / 2);
+                        }
+                    } else {
+                        d.alive = false;
+                        sfx.playExplosion();
+                        createFirework(d.x + d.width / 2, d.y + d.height / 2);
+                        invaderBulletsToRemove.add(b);
+                    }
+                }
+            }
+        });
     });
     if (invaderBulletsToRemove.size > 0) {
         invaderBullets = invaderBullets.filter(b => !invaderBulletsToRemove.has(b));
@@ -1652,7 +1764,7 @@ function showUpgradeScreen() {
     const player = players[currentUpgradingPlayer];
     
     // Pick 2 random upgrades that are not at cap
-    const allUpgrades = ['rapid', 'explosion', 'laser', 'freeze', 'speed', 'shield', 'shockwave'];
+    const allUpgrades = ['rapid', 'explosion', 'laser', 'freeze', 'speed', 'shield', 'shockwave', 'drone'];
     const availableUpgrades = allUpgrades.filter(type => {
         if (type === 'rapid') return player.upgrades.rapid < 9;
         if (type === 'explosion') return player.upgrades.explosion < 1.0;
@@ -1661,6 +1773,7 @@ function showUpgradeScreen() {
         if (type === 'speed') return (player.upgrades.speed - PLAYER_SPEED) < 10;
         if (type === 'shield') return player.upgrades.shield < 10;
         if (type === 'shockwave') return player.upgrades.shockwave < 10;
+        if (type === 'drone') return player.upgrades.drone < 5;
         return true;
     });
 
@@ -1717,6 +1830,7 @@ function updateUpgradeOverlay() {
         else if (type === 'speed') info = `${spdWord} ${Math.round(player.upgrades.speed)} (${lvlWord} ${Math.round(player.upgrades.speed - PLAYER_SPEED)}/10)`;
         else if (type === 'shield') info = `${lvlWord} ${player.upgrades.shield}/10`;
         else if (type === 'shockwave') info = `${lvlWord} ${player.upgrades.shockwave}/10`;
+        else if (type === 'drone') info = `${lvlWord} ${player.upgrades.drone}/5`;
         
         const infoEl = card.querySelector('.level-info');
         if (infoEl) infoEl.textContent = info;
@@ -1744,6 +1858,8 @@ function selectUpgrade(type) {
         player.upgrades.shield += 1;
     } else if (type === 'shockwave' && player.upgrades.shockwave < 10) {
         player.upgrades.shockwave += 1;
+    } else if (type === 'drone' && player.upgrades.drone < 5) {
+        player.upgrades.drone += 1;
     }
 
     if (playerMode === 2 && currentUpgradingPlayer === 0) {
@@ -1757,6 +1873,19 @@ function selectUpgrade(type) {
             totalLives++;
             updateLivesUI();
         }
+
+        // Revive dead players since lives > 0 now
+        players.forEach(p => {
+            if (!p.alive) {
+                p.alive = true;
+                p.invincible = 120; // Give spawn protection
+                p.x = p.id === 1 ? canvas.width * 0.2 : canvas.width * 0.4;
+                p.y = canvas.height - 40;
+            }
+        });
+
+        // Clear active drones at round completion
+        drones = [];
 
         level++;
         initInvaders();
@@ -1795,11 +1924,20 @@ function damagePlayer(p) {
     
     if (totalLives <= 0) {
         p.alive = false;
+        
+        // Play explosion sound and show explosion effect on player death
+        sfx.playExplosion();
+        createFirework(p.x + p.width/2, p.y + p.height/2);
+        
         if (pvp.state === 'FIGHTING') {
             pvp.socket.emit('hit', { roomId: pvp.roomId });
             pvp.loseRound();
         } else {
-            endGame();
+            // Check if any player is still alive
+            const anyPlayerAlive = players.some(pl => pl.alive);
+            if (!anyPlayerAlive) {
+                endGame();
+            }
         }
     } else {
         p.invincible = 120; // 2 seconds of invincibility
@@ -1891,6 +2029,7 @@ function quitToMenu() {
     document.getElementById('pause-overlay').classList.remove('active');
     document.getElementById('setup-screen').classList.add('active');
     document.getElementById('mobile-controls').classList.remove('active');
+    drones = [];
     loadScores();
 }
 
@@ -2146,7 +2285,9 @@ const LOCALIZATION = {
         card_scout_name: "SCOUT",
         card_scout_desc: "+50% SPEED",
         card_glass_name: "GLASS CANNON",
-        card_glass_desc: "INSTANT SHOOT"
+        card_glass_desc: "INSTANT SHOOT",
+        upgrade_drone_title: "HACKED DRONE",
+        upgrade_drone_desc: "Press X to spawn helper drones"
     },
     es: {
         title: "¡ZAPEA AL INVASOR!",
@@ -2237,7 +2378,9 @@ const LOCALIZATION = {
         card_scout_name: "EXPLORADOR",
         card_scout_desc: "+50% VELOCIDAD",
         card_glass_name: "CAÑÓN CRISTAL",
-        card_glass_desc: "DISPARO INSTANTÁNEO"
+        card_glass_desc: "DISPARO INSTANTÁNEO",
+        upgrade_drone_title: "DRON HACKEADO",
+        upgrade_drone_desc: "Presiona X para lanzar drones ayudantes"
     },
     fr: {
         title: "ZAPPER LA CHOSE !",
@@ -2328,7 +2471,9 @@ const LOCALIZATION = {
         card_scout_name: "ÉCLAIREUR",
         card_scout_desc: "+50% VITESSE",
         card_glass_name: "CANON DE VERRE",
-        card_glass_desc: "TIR INSTANTANÉ"
+        card_glass_desc: "TIR INSTANTANÉ",
+        upgrade_drone_title: "DRÔNE PIRATÉ",
+        upgrade_drone_desc: "Appuyez sur X pour lancer des drônes"
     },
     de: {
         title: "ZAP DAS DING!",
@@ -2419,7 +2564,9 @@ const LOCALIZATION = {
         card_scout_name: "SPÄHER",
         card_scout_desc: "+50% SPEED",
         card_glass_name: "GLASKANONE",
-        card_glass_desc: "SOFORTIGES SCHIESSEN"
+        card_glass_desc: "SOFORTIGES SCHIESSEN",
+        upgrade_drone_title: "GEHACKTE DROHNE",
+        upgrade_drone_desc: "Drücke X um Helferdrohnen zu rufen"
     },
     ja: {
         title: "ザップ・ザ・シング！",
@@ -2510,7 +2657,9 @@ const LOCALIZATION = {
         card_scout_name: "スカウト",
         card_scout_desc: "+50% 速度",
         card_glass_name: "ガラスの砲身",
-        card_glass_desc: "即時射撃"
+        card_glass_desc: "即時射撃",
+        upgrade_drone_title: "ハッキングドローン",
+        upgrade_drone_desc: "Xキーで赤いドローンを召喚"
     }
 };
 
