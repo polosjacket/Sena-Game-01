@@ -1529,17 +1529,7 @@ function gameLoop() {
     players.forEach(p => {
         p.update();
         p.draw();
-    });
-
-    // Keyboard check for H-key drone retention toggle
-    if (keys['KeyH'] && !hWasDown) {
-        hWasDown = true;
-        keepDrones = !keepDrones;
-        sfx.playPowerUp();
-    }
-    if (!keys['KeyH']) {
-        hWasDown = false;
-    }    
+        
         if (pvp.state === 'FIGHTING') {
             // Send position to opponent
             pvp.socket.emit('update_state', {
@@ -1551,6 +1541,16 @@ function gameLoop() {
             // I'll modify Player class later
         }
     });
+
+    // Keyboard check for H-key drone retention toggle
+    if (keys['KeyH'] && !hWasDown) {
+        hWasDown = true;
+        keepDrones = !keepDrones;
+        sfx.playPowerUp();
+    }
+    if (!keys['KeyH']) {
+        hWasDown = false;
+    }
 
     if (pvp.state === 'FIGHTING' && window.remotePlayer) {
         window.remotePlayer.draw();
@@ -1843,7 +1843,7 @@ function showUpgradeScreen() {
         if (type === 'speed') return (player.upgrades.speed - PLAYER_SPEED) < 10;
         if (type === 'shield') return player.upgrades.shield < 10;
         if (type === 'shockwave') return player.upgrades.shockwave < 10;
-        if (type === 'drone') return player.upgrades.drone < 5;
+        if (type === 'drone') return player.upgrades.drone < 10;
         return true;
     });
 
@@ -1900,7 +1900,7 @@ function updateUpgradeOverlay() {
         else if (type === 'speed') info = `${spdWord} ${Math.round(player.upgrades.speed)} (${lvlWord} ${Math.round(player.upgrades.speed - PLAYER_SPEED)}/10)`;
         else if (type === 'shield') info = `${lvlWord} ${player.upgrades.shield}/10`;
         else if (type === 'shockwave') info = `${lvlWord} ${player.upgrades.shockwave}/10`;
-        else if (type === 'drone') info = `${lvlWord} ${player.upgrades.drone}/5`;
+        else if (type === 'drone') info = `${lvlWord} ${player.upgrades.drone}/10`;
         
         const infoEl = card.querySelector('.level-info');
         if (infoEl) infoEl.textContent = info;
@@ -1928,7 +1928,7 @@ function selectUpgrade(type) {
         player.upgrades.shield += 1;
     } else if (type === 'shockwave' && player.upgrades.shockwave < 10) {
         player.upgrades.shockwave += 1;
-    } else if (type === 'drone' && player.upgrades.drone < 5) {
+    } else if (type === 'drone' && player.upgrades.drone < 10) {
         player.upgrades.drone += 1;
     }
 
