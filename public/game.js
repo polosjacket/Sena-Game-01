@@ -231,6 +231,8 @@ let playerBullets = [];
 let playerShockwaves = [];
 let invaderBullets = [];
 let drones = [];
+let keepDrones = false;
+let hWasDown = false;
 let level = 1;
 let animationId;
 let currentUpgradingPlayer = 0;
@@ -569,10 +571,45 @@ class Drone {
     update() {
         if (!this.alive) return;
 
+        // Scanning for incoming invader bullets to dodge
+        let targetBullet = null;
+        let minDistance = 9999;
+        
+        invaderBullets.forEach(b => {
+            // Check if the bullet is heading down towards this drone
+            const dy = this.y - b.y;
+            const dx = Math.abs((b.x + b.width / 2) - (this.x + this.width / 2));
+            if (dy > 0 && dy < 150 && dx < 70) {
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist < minDistance) {
+                    minDistance = dist;
+                    targetBullet = b;
+                }
+            }
+        });
+
+        let currentSpeed = this.speed;
+        if (targetBullet) {
+            // DODGE IN PROGRESS!
+            const bulletCenterX = targetBullet.x + targetBullet.width / 2;
+            const droneCenterX = this.x + this.width / 2;
+            
+            // Steer away horizontally from the threat
+            if (bulletCenterX < droneCenterX) {
+                this.direction = 1; // Move right
+            } else {
+                this.direction = -1; // Move left
+            }
+            currentSpeed = this.speed * 2.0; // Double speed for emergency dodge!
+        }
+
         // Move horizontally alongside the player
-        this.x += this.speed * this.direction;
+        this.x += currentSpeed * this.direction;
         if (this.x < 20 || this.x > canvas.width - this.width - 20) {
             this.direction *= -1;
+            // Bound inside canvas to prevent getting stuck
+            if (this.x < 20) this.x = 20;
+            if (this.x > canvas.width - this.width - 20) this.x = canvas.width - this.width - 20;
         }
 
         // Maintain height near the player baseline
@@ -1431,6 +1468,10 @@ function startGame() {
         document.getElementById('mobile-controls').classList.remove('active');
     }
 
+    // Toggle states reset
+    keepDrones = false;
+    hWasDown = false;
+
 
 
     playerBullets = [];
@@ -1488,7 +1529,17 @@ function gameLoop() {
     players.forEach(p => {
         p.update();
         p.draw();
-        
+    });
+
+    // Keyboard check for H-key drone retention toggle
+    if (keys['KeyH'] && !hWasDown) {
+        hWasDown = true;
+        keepDrones = !keepDrones;
+        sfx.playPowerUp();
+    }
+    if (!keys['KeyH']) {
+        hWasDown = false;
+    }    
         if (pvp.state === 'FIGHTING') {
             // Send position to opponent
             pvp.socket.emit('update_state', {
@@ -1753,6 +1804,25 @@ function gameLoop() {
         }, 3000);
     }
 
+    // Render keepDrones HUD indicator on canvas
+    if (keepDrones) {
+        ctx.save();
+        ctx.fillStyle = '#ff003c';
+        ctx.font = 'bold 12px "Courier New", Courier, monospace';
+        ctx.textAlign = 'right';
+        const label = getTranslation('keep_drones_label');
+        ctx.fillText(label, canvas.width - 20, canvas.height - 20);
+        
+        // Draw a small red glowing pulse circle next to the label
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#ff003c';
+        ctx.beginPath();
+        const pulse = Math.abs(Math.sin(Date.now() / 200)) * 4 + 2;
+        ctx.arc(canvas.width - 20 - ctx.measureText(label).width - 10, canvas.height - 24, pulse, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+    }
+
     animationId = requestAnimationFrame(gameLoop);
 }
 
@@ -1884,8 +1954,10 @@ function selectUpgrade(type) {
             }
         });
 
-        // Clear active drones at round completion
-        drones = [];
+        // Clear active drones at round completion if retention is inactive
+        if (!keepDrones) {
+            drones = [];
+        }
 
         level++;
         initInvaders();
@@ -2030,6 +2102,8 @@ function quitToMenu() {
     document.getElementById('setup-screen').classList.add('active');
     document.getElementById('mobile-controls').classList.remove('active');
     drones = [];
+    keepDrones = false;
+    hWasDown = false;
     loadScores();
 }
 
@@ -2287,7 +2361,8 @@ const LOCALIZATION = {
         card_glass_name: "GLASS CANNON",
         card_glass_desc: "INSTANT SHOOT",
         upgrade_drone_title: "HACKED DRONE",
-        upgrade_drone_desc: "Press X to spawn helper drones"
+        upgrade_drone_desc: "Press X to spawn helper drones",
+        keep_drones_label: "DRONES LOCKED"
     },
     es: {
         title: "¡ZAPEA AL INVASOR!",
@@ -2380,7 +2455,8 @@ const LOCALIZATION = {
         card_glass_name: "CAÑÓN CRISTAL",
         card_glass_desc: "DISPARO INSTANTÁNEO",
         upgrade_drone_title: "DRON HACKEADO",
-        upgrade_drone_desc: "Presiona X para lanzar drones ayudantes"
+        upgrade_drone_desc: "Presiona X para lanzar drones ayudantes",
+        keep_drones_label: "DRONES BLOQUEADOS"
     },
     fr: {
         title: "ZAPPER LA CHOSE !",
@@ -2473,7 +2549,8 @@ const LOCALIZATION = {
         card_glass_name: "CANON DE VERRE",
         card_glass_desc: "TIR INSTANTANÉ",
         upgrade_drone_title: "DRÔNE PIRATÉ",
-        upgrade_drone_desc: "Appuyez sur X pour lancer des drônes"
+        upgrade_drone_desc: "Appuyez sur X pour lancer des drônes",
+        keep_drones_label: "DRÔNES RETENUS"
     },
     de: {
         title: "ZAP DAS DING!",
@@ -2566,7 +2643,8 @@ const LOCALIZATION = {
         card_glass_name: "GLASKANONE",
         card_glass_desc: "SOFORTIGES SCHIESSEN",
         upgrade_drone_title: "GEHACKTE DROHNE",
-        upgrade_drone_desc: "Drücke X um Helferdrohnen zu rufen"
+        upgrade_drone_desc: "Drücke X um Helferdrohnen zu rufen",
+        keep_drones_label: "DROHNEN GESICHERT"
     },
     ja: {
         title: "ザップ・ザ・シング！",
@@ -2659,7 +2737,8 @@ const LOCALIZATION = {
         card_glass_name: "ガラスの砲身",
         card_glass_desc: "即時射撃",
         upgrade_drone_title: "ハッキングドローン",
-        upgrade_drone_desc: "Xキーで赤いドローンを召喚"
+        upgrade_drone_desc: "Xキーで赤いドローンを召喚",
+        keep_drones_label: "ドローン固定"
     }
 };
 
