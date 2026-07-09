@@ -239,6 +239,7 @@ let currentUpgradingPlayer = 0;
 let heart = null;
 let heartSpawnedInRound = false;
 let totalLives = 3;
+let maxLives = 3;
 
 // Socket.io initialization
 const socket = io();
@@ -1314,6 +1315,9 @@ class PVPManager {
         document.getElementById('pvp-score-board').classList.remove('hidden');
         this.updateScoreUI();
 
+        totalLives = 3;
+        maxLives = 3;
+
         // Initialize players for PVP
         if (players.length === 0) startGame();
         
@@ -1325,9 +1329,14 @@ class PVPManager {
         myP.invincible = 120;
 
         // Apply Card Buffs
-        if (this.myCard.id === 'tank') totalLives += 2;
+        if (this.myCard.id === 'tank') {
+            totalLives += 2;
+            maxLives += 2;
+        }
         if (this.myCard.id === 'scout') myP.upgrades.speed += 3;
         if (this.myCard.id === 'glass') myP.upgrades.rapid = 10;
+
+        updateLivesUI();
 
         // Remote Player
         window.remotePlayer = new Player(2, this.opponent.name, canvas.width * 0.8, canvas.height - 40, '#ff006e', {});
@@ -1471,6 +1480,8 @@ function startGame() {
     // Toggle states reset
     keepDrones = false;
     hWasDown = false;
+    totalLives = 3;
+    maxLives = 3;
 
 
 
@@ -1480,6 +1491,7 @@ function startGame() {
     drones = [];
     level = 1;
     initInvaders();
+    updateLivesUI();
 
     document.getElementById('setup-screen').classList.remove('active');
     document.getElementById('game-over-screen').classList.remove('active');
@@ -1938,8 +1950,8 @@ function selectUpgrade(type) {
     } else {
         document.getElementById('upgrade-overlay').classList.remove('active');
         
-        // Heal 1 heart upon completing the round
-        if (totalLives < 3) {
+        // Heal 1 heart upon completing the round up to maxLives
+        if (totalLives < maxLives) {
             totalLives++;
             updateLivesUI();
         }
@@ -1969,11 +1981,21 @@ function updateLivesUI() {
     const container = document.getElementById('lives-display');
     if (!container) return;
     container.innerHTML = '';
-    for (let i = 0; i < 3; i++) {
-        const heart = document.createElement('span');
-        heart.className = i < totalLives ? 'heart' : 'heart lost';
-        heart.textContent = '❤️';
-        container.appendChild(heart);
+    for (let i = 0; i < maxLives; i++) {
+        const isFull = i < totalLives;
+        const heartSVG = `
+            <svg class="heart-svg ${isFull ? '' : 'lost'}" viewBox="0 0 8 8">
+                <rect x="1" y="1" width="2" height="1" fill="currentColor"/>
+                <rect x="5" y="1" width="2" height="1" fill="currentColor"/>
+                <rect x="0" y="2" width="8" height="1" fill="currentColor"/>
+                <rect x="0" y="3" width="8" height="1" fill="currentColor"/>
+                <rect x="0" y="4" width="8" height="1" fill="currentColor"/>
+                <rect x="1" y="5" width="6" height="1" fill="currentColor"/>
+                <rect x="2" y="6" width="4" height="1" fill="currentColor"/>
+                <rect x="3" y="7" width="2" height="1" fill="currentColor"/>
+            </svg>
+        `;
+        container.insertAdjacentHTML('beforeend', heartSVG);
     }
 }
 
@@ -2104,6 +2126,8 @@ function quitToMenu() {
     drones = [];
     keepDrones = false;
     hWasDown = false;
+    totalLives = 3;
+    maxLives = 3;
     loadScores();
 }
 
@@ -2150,6 +2174,7 @@ function initUIListeners() {
         } else {
             // Full restart
             totalLives = 3;
+            maxLives = 3;
             level = 1;
             document.getElementById('game-over-screen').classList.remove('active');
             document.getElementById('setup-screen').classList.add('active');

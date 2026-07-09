@@ -498,19 +498,21 @@ button {
     gap: 10px;
 }
 
-.hud-lives .heart {
-    font-size: 20px;
+.hud-lives .heart-svg {
+    width: 24px;
+    height: 24px;
 }
 
-
-.heart {
-    font-size: 32px;
-    filter: drop-shadow(0 0 5px rgba(255, 0, 110, 0.5));
+.heart-svg {
+    color: var(--accent-pink);
+    filter: drop-shadow(0 0 5px rgba(255, 0, 110, 0.7));
+    transition: color 0.3s ease, filter 0.3s ease;
 }
 
-.heart.lost {
-    opacity: 0.2;
-    filter: grayscale(100%);
+.heart-svg.lost {
+    color: #495057;
+    filter: none;
+    opacity: 0.3;
 }
 
 .secondary-btn {
