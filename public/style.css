@@ -504,15 +504,22 @@ button {
 }
 
 .heart-svg {
-    color: var(--accent-pink);
     filter: drop-shadow(0 0 5px rgba(255, 0, 110, 0.7));
-    transition: color 0.3s ease, filter 0.3s ease;
+    transition: filter 0.3s ease;
+}
+
+.heart-svg rect {
+    fill: var(--accent-pink);
+    transition: fill 0.3s ease;
 }
 
 .heart-svg.lost {
-    color: #495057;
     filter: none;
     opacity: 0.3;
+}
+
+.heart-svg.lost rect {
+    fill: #495057;
 }
 
 .secondary-btn {
