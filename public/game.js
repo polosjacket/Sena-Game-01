@@ -324,7 +324,8 @@ class Player {
             speed: PLAYER_SPEED, // Ship movement speed
             shield: 0, // Number of attacks the shield can block
             shockwave: 0, // Number of shockwaves you can fire
-            drone: 0 // Number of helper drones you can spawn
+            drone: 0, // Number of helper drones you can spawn
+            sword_swing: 0 // Level of sword swing returning spinning sword
         };
 
         this.activeShields = 0;
@@ -336,6 +337,7 @@ class Player {
         this.lastShootPressTime = 0;
         this.shootWasDown = false;
         this.xWasDown = false;
+        this.iWasDown = false;
 
     }
 
@@ -454,6 +456,25 @@ class Player {
         }
         if (this.id === 1 && !keys['KeyX']) {
             this.xWasDown = false;
+        }
+
+        // Sword Swing logic (Press I)
+        if (this.id === 1 && keys['KeyI'] && this.upgrades.sword_swing > 0 && !this.iWasDown) {
+            this.iWasDown = true;
+            const swordSpeed = -5; // Initial upward speed
+            const sword = new Bullet(
+                this.x + this.width / 2 - 15,
+                this.y - 20,
+                '#00ffff',
+                swordSpeed,
+                this.id,
+                'sword_swing'
+            );
+            playerBullets.push(sword);
+            sfx.playShootPlayer();
+        }
+        if (this.id === 1 && !keys['KeyI']) {
+            this.iWasDown = false;
         }
 
         // Shield Logic
@@ -1111,13 +1132,24 @@ class Bullet {
     constructor(x, y, color, speed, ownerId = null, type = 'normal', widthOverride = null) {
         this.x = x;
         this.y = y;
-        this.width = widthOverride !== null ? widthOverride : (type === 'laser' ? 20 : 4);
-        this.height = type === 'laser' ? canvas.height : 10;
-        this.color = color;
-        this.speed = speed;
         this.ownerId = ownerId;
         this.type = type;
-        this.life = type === 'laser' ? 10 : 100; // Laser lasts 10 frames
+
+        const player = players.find(p => p.id === ownerId) || { upgrades: { sword_swing: 1 } };
+        const swordLevel = player.upgrades.sword_swing || 1;
+
+        this.width = widthOverride !== null ? widthOverride : (type === 'laser' ? 20 : (type === 'sword_swing' ? 24 + swordLevel * 4 : 4));
+        this.height = type === 'laser' ? canvas.height : (type === 'sword_swing' ? 24 + swordLevel * 4 : 10);
+        this.color = color;
+        this.speed = speed;
+        this.life = type === 'laser' ? 10 : (type === 'sword_swing' ? 400 : 100); // Sword swing has 400 frames of life max
+
+        if (type === 'sword_swing') {
+            this.state = 'FORWARD'; // 'FORWARD' or 'RETURNING'
+            this.hitTargets = new Set();
+            this.rotation = 0;
+            this.speedY = speed;
+        }
     }
 
     draw() {
@@ -1129,6 +1161,42 @@ class Bullet {
             ctx.globalAlpha = this.life / 10;
             ctx.fillRect(this.x, 0, this.width, canvas.height);
             ctx.globalAlpha = 1;
+        } else if (this.type === 'sword_swing') {
+            ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+            ctx.rotate(this.rotation);
+            
+            // Draw a beautiful spinning sword
+            // Blade (silver/light blue shiny metallic with a glowing outline)
+            ctx.fillStyle = '#e0f7fa';
+            ctx.strokeStyle = '#00e5ff';
+            ctx.lineWidth = 2;
+            
+            // Scale based on the sword size
+            const scale = this.width / 28;
+            ctx.scale(scale, scale);
+
+            ctx.beginPath();
+            ctx.moveTo(-4, -18);
+            ctx.lineTo(4, -18);
+            ctx.lineTo(6, 10);
+            ctx.lineTo(-6, 10);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+            
+            // Guard
+            ctx.fillStyle = '#ffb300';
+            ctx.fillRect(-12, 10, 24, 4);
+            
+            // Handle
+            ctx.fillStyle = '#5d4037';
+            ctx.fillRect(-3, 14, 6, 10);
+            
+            // Pommel
+            ctx.fillStyle = '#ffb300';
+            ctx.beginPath();
+            ctx.arc(0, 26, 4, 0, Math.PI * 2);
+            ctx.fill();
         } else {
             ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
             if (this.ownerId === 1) {
@@ -1164,6 +1232,38 @@ class Bullet {
     update() {
         if (this.type === 'laser') {
             this.life--;
+        } else if (this.type === 'sword_swing') {
+            this.life--;
+            this.rotation += 0.2;
+            
+            const player = players.find(p => p.id === this.ownerId) || players[0];
+            if (this.state === 'FORWARD') {
+                this.y += this.speedY;
+                this.speedY += 0.15; // Slow down going up
+                if (this.speedY >= 0 || this.y <= 20) {
+                    this.state = 'RETURNING';
+                    this.hitTargets.clear(); // Allow hitting targets again on the return trip
+                }
+            } else if (this.state === 'RETURNING') {
+                if (!player || !player.alive) {
+                    this.life = 0; // Destroy sword if player is dead/not found
+                } else {
+                    const targetX = player.x + player.width / 2 - this.width / 2;
+                    const targetY = player.y + player.height / 2 - this.height / 2;
+                    
+                    const dx = targetX - this.x;
+                    const dy = targetY - this.y;
+                    const dist = Math.hypot(dx, dy);
+                    
+                    if (dist < 20) {
+                        this.life = 0; // Caught by player!
+                    } else {
+                        const speed = 7;
+                        this.x += (dx / dist) * speed;
+                        this.y += (dy / dist) * speed;
+                    }
+                }
+            }
         } else {
             this.y += this.speed;
         }
@@ -1626,7 +1726,11 @@ function gameLoop() {
     });
 
     // Update & Draw Bullets
-    playerBullets = playerBullets.filter(b => (b.type === 'laser' ? b.life > 0 : b.y > 0));
+    playerBullets = playerBullets.filter(b => {
+        if (b.type === 'laser') return b.life > 0;
+        if (b.type === 'sword_swing') return b.life > 0;
+        return b.y > 0;
+    });
     /**
      * Bullet Collision Engine
      * Checks interactions between player/enemy bullets and targets.
@@ -1642,9 +1746,19 @@ function gameLoop() {
         if (boss) {
             if (b.x < boss.x + boss.width && b.x + b.width > boss.x && b.y < boss.y + boss.height && b.y + b.height > boss.y) {
                 if (b.type === 'normal') playerBullets.splice(bIdx, 1);
-                const laserDmg = 15 + (player.upgrades.laserLvl - 1) * 2;
-                boss.hp -= (b.type === 'laser' ? laserDmg / 10 : 10); // Nerfed laser damage to boss
-                sfx.playHitSFX();
+                
+                if (b.type === 'sword_swing') {
+                    if (!b.hitTargets.has(boss)) {
+                        b.hitTargets.add(boss);
+                        boss.hp -= (1 + (player.upgrades.sword_swing || 0)) * 2; // Sword swing scales and deals extra damage to boss
+                        sfx.playHitSFX();
+                    }
+                } else {
+                    const laserDmg = 15 + (player.upgrades.laserLvl - 1) * 2;
+                    boss.hp -= (b.type === 'laser' ? laserDmg / 10 : 10); // Nerfed laser damage to boss
+                    sfx.playHitSFX();
+                }
+                
                 if (boss.hp <= 0) {
                     player.score += 1000;
                     boss = null;
@@ -1658,8 +1772,13 @@ function gameLoop() {
             if (invadersToRemove.has(inv)) continue;
 
             if (b.x < inv.x + inv.width && b.x + b.width > inv.x && b.y < inv.y + inv.height && b.y + b.height > inv.y) {
+                if (b.type === 'sword_swing') {
+                    if (b.hitTargets.has(inv)) continue;
+                    b.hitTargets.add(inv);
+                }
+
                 // Damage invader
-                inv.hp -= 1;
+                inv.hp -= (b.type === 'sword_swing' ? (1 + (player.upgrades.sword_swing || 0)) : 1);
                 sfx.playHitSFX();
 
                 if (inv.hp <= 0) {
@@ -1846,7 +1965,7 @@ function showUpgradeScreen() {
     const player = players[currentUpgradingPlayer];
     
     // Pick 2 random upgrades that are not at cap
-    const allUpgrades = ['rapid', 'explosion', 'laser', 'freeze', 'speed', 'shield', 'shockwave', 'drone'];
+    const allUpgrades = ['rapid', 'explosion', 'laser', 'freeze', 'speed', 'shield', 'shockwave', 'drone', 'sword_swing'];
     const availableUpgrades = allUpgrades.filter(type => {
         if (type === 'rapid') return player.upgrades.rapid < 9;
         if (type === 'explosion') return player.upgrades.explosion < 1.0;
@@ -1856,6 +1975,7 @@ function showUpgradeScreen() {
         if (type === 'shield') return player.upgrades.shield < 10;
         if (type === 'shockwave') return player.upgrades.shockwave < 10;
         if (type === 'drone') return player.upgrades.drone < 10;
+        if (type === 'sword_swing') return player.upgrades.sword_swing < 10;
         return true;
     });
 
@@ -1892,6 +2012,15 @@ function showUpgradeScreen() {
     document.getElementById('upgrade-overlay').classList.add('active');
 }
 
+function toRoman(num) {
+    if (num === 0) return '0';
+    const roman = {
+        10: 'X', 9: 'IX', 8: 'VIII', 7: 'VII', 6: 'VI',
+        5: 'V', 4: 'IV', 3: 'III', 2: 'II', 1: 'I'
+    };
+    return roman[num] || num;
+}
+
 function updateUpgradeOverlay() {
     const player = players[currentUpgradingPlayer];
     document.getElementById('upgrade-title').textContent = `${player.name.toUpperCase()} ${getTranslation('upgrade_suffix')}`;
@@ -1905,14 +2034,15 @@ function updateUpgradeOverlay() {
     cards.forEach(card => {
         const type = card.dataset.upgrade;
         let info = '';
-        if (type === 'rapid') info = `${lvlWord} ${player.upgrades.rapid}/9`;
-        else if (type === 'explosion') info = `${Math.round(player.upgrades.explosion * 100)}% ${chanceWord} (${lvlWord} ${Math.round(player.upgrades.explosion * 10)}/10)`;
-        else if (type === 'laser') info = `${lvlWord} ${player.upgrades.laserLvl}/10 (${Math.round(player.upgrades.laser * 100)}% ${chanceWord})`;
-        else if (type === 'freeze') info = `${Math.round(player.upgrades.freeze * 100)}% ${chanceWord} (${lvlWord} ${Math.round(player.upgrades.freeze * 10)}/10)`;
-        else if (type === 'speed') info = `${spdWord} ${Math.round(player.upgrades.speed)} (${lvlWord} ${Math.round(player.upgrades.speed - PLAYER_SPEED)}/10)`;
-        else if (type === 'shield') info = `${lvlWord} ${player.upgrades.shield}/10`;
-        else if (type === 'shockwave') info = `${lvlWord} ${player.upgrades.shockwave}/10`;
-        else if (type === 'drone') info = `${lvlWord} ${player.upgrades.drone}/10`;
+        if (type === 'rapid') info = `${lvlWord} ${toRoman(player.upgrades.rapid)}/${toRoman(9)}`;
+        else if (type === 'explosion') info = `${Math.round(player.upgrades.explosion * 100)}% ${chanceWord} (${lvlWord} ${toRoman(Math.round(player.upgrades.explosion * 10))}/${toRoman(10)})`;
+        else if (type === 'laser') info = `${lvlWord} ${toRoman(player.upgrades.laserLvl)}/${toRoman(10)} (${Math.round(player.upgrades.laser * 100)}% ${chanceWord})`;
+        else if (type === 'freeze') info = `${Math.round(player.upgrades.freeze * 100)}% ${chanceWord} (${lvlWord} ${toRoman(Math.round(player.upgrades.freeze * 10))}/${toRoman(10)})`;
+        else if (type === 'speed') info = `${spdWord} ${Math.round(player.upgrades.speed)} (${lvlWord} ${toRoman(Math.round(player.upgrades.speed - PLAYER_SPEED))}/${toRoman(10)})`;
+        else if (type === 'shield') info = `${lvlWord} ${toRoman(player.upgrades.shield)}/${toRoman(10)}`;
+        else if (type === 'shockwave') info = `${lvlWord} ${toRoman(player.upgrades.shockwave)}/${toRoman(10)}`;
+        else if (type === 'drone') info = `${lvlWord} ${toRoman(player.upgrades.drone)}/${toRoman(10)}`;
+        else if (type === 'sword_swing') info = `${lvlWord} ${toRoman(player.upgrades.sword_swing)}/${toRoman(10)}`;
         
         const infoEl = card.querySelector('.level-info');
         if (infoEl) infoEl.textContent = info;
@@ -1942,6 +2072,8 @@ function selectUpgrade(type) {
         player.upgrades.shockwave += 1;
     } else if (type === 'drone' && player.upgrades.drone < 10) {
         player.upgrades.drone += 1;
+    } else if (type === 'sword_swing' && player.upgrades.sword_swing < 10) {
+        player.upgrades.sword_swing += 1;
     }
 
     if (playerMode === 2 && currentUpgradingPlayer === 0) {
@@ -2387,7 +2519,9 @@ const LOCALIZATION = {
         card_glass_desc: "INSTANT SHOOT",
         upgrade_drone_title: "HACKED DRONE",
         upgrade_drone_desc: "Press X to spawn helper drones",
-        keep_drones_label: "DRONES LOCKED"
+        keep_drones_label: "DRONES LOCKED",
+        upgrade_sword_swing_title: "SWORD SWING",
+        upgrade_sword_swing_desc: "Press I to throw a returning spinning sword"
     },
     es: {
         title: "¡ZAPEA AL INVASOR!",
@@ -2481,7 +2615,9 @@ const LOCALIZATION = {
         card_glass_desc: "DISPARO INSTANTÁNEO",
         upgrade_drone_title: "DRON HACKEADO",
         upgrade_drone_desc: "Presiona X para lanzar drones ayudantes",
-        keep_drones_label: "DRONES BLOQUEADOS"
+        keep_drones_label: "DRONES BLOQUEADOS",
+        upgrade_sword_swing_title: "ESPADA GIRATORIA",
+        upgrade_sword_swing_desc: "Presiona I para lanzar una espada giratoria que regresa"
     },
     fr: {
         title: "ZAPPER LA CHOSE !",
@@ -2575,7 +2711,9 @@ const LOCALIZATION = {
         card_glass_desc: "TIR INSTANTANÉ",
         upgrade_drone_title: "DRÔNE PIRATÉ",
         upgrade_drone_desc: "Appuyez sur X pour lancer des drônes",
-        keep_drones_label: "DRÔNES RETENUS"
+        keep_drones_label: "DRÔNES RETENUS",
+        upgrade_sword_swing_title: "COUP D'ÉPÉE",
+        upgrade_sword_swing_desc: "Appuyez sur I pour lancer une épée tournante qui revient"
     },
     de: {
         title: "ZAP DAS DING!",
@@ -2669,7 +2807,9 @@ const LOCALIZATION = {
         card_glass_desc: "SOFORTIGES SCHIESSEN",
         upgrade_drone_title: "GEHACKTE DROHNE",
         upgrade_drone_desc: "Drücke X um Helferdrohnen zu rufen",
-        keep_drones_label: "DROHNEN GESICHERT"
+        keep_drones_label: "DROHNEN GESICHERT",
+        upgrade_sword_swing_title: "SCHWERTSCHWUNG",
+        upgrade_sword_swing_desc: "Drücke I, um ein zurückkehrendes, rotierendes Schwert zu werfen"
     },
     ja: {
         title: "ザップ・ザ・シング！",
@@ -2763,7 +2903,9 @@ const LOCALIZATION = {
         card_glass_desc: "即時射撃",
         upgrade_drone_title: "ハッキングドローン",
         upgrade_drone_desc: "Xキーで赤いドローンを召喚",
-        keep_drones_label: "ドローン固定"
+        keep_drones_label: "ドローン固定",
+        upgrade_sword_swing_title: "ソードスイング",
+        upgrade_sword_swing_desc: "Iキーで戻ってくる回転する剣を投げる"
     }
 };
 
