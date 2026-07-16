@@ -6,7 +6,7 @@
 const os = require('os');
 
 module.exports = {
-  port: process.env.PORT || 3000,
+  port: process.env.PORT || 3005,
   dbPath: process.env.DB_PATH || 'highscores.db',
   nodeEnv: process.env.NODE_ENV || 'development',
   
