@@ -463,7 +463,7 @@ class Player {
         const activeSwordsCount = playerBullets.filter(b => b.type === 'sword_swing' && b.ownerId === this.id).length;
         if (this.id === 1 && keys['KeyI'] && this.upgrades.sword_swing > 0 && !this.iWasDown && activeSwordsCount < this.upgrades.sword_swing) {
             this.iWasDown = true;
-            const swordSpeed = -5; // Initial upward speed
+            const swordSpeed = -11; // Initial upward speed
             const sword = new Bullet(
                 this.x + this.width / 2 - 15,
                 this.y - 20,
