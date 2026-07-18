@@ -326,7 +326,8 @@ class Player {
             shield: 0, // Number of attacks the shield can block
             shockwave: 0, // Number of shockwaves you can fire
             drone: 0, // Number of helper drones you can spawn
-            sword_swing: 0 // Level of sword swing returning spinning sword
+            sword_swing: 0, // Level of sword swing returning spinning sword
+            rocket_boom: 0 // Level of rocket-boom plantable rockets
         };
 
         this.activeShields = 0;
@@ -339,6 +340,7 @@ class Player {
         this.shootWasDown = false;
         this.xWasDown = false;
         this.iWasDown = false;
+        this.qWasDown = false;
 
     }
 
@@ -477,6 +479,27 @@ class Player {
         }
         if (this.id === 1 && !keys['KeyI']) {
             this.iWasDown = false;
+        }
+
+        // Rocket-Boom logic (Press Q)
+        const activeRocketsCount = playerBullets.filter(b => b.type === 'rocket_boom' && b.ownerId === this.id).length;
+        if (this.id === 1 && keys['KeyQ'] && this.upgrades.rocket_boom > 0 && !this.qWasDown) {
+            this.qWasDown = true;
+            if (activeRocketsCount < this.upgrades.rocket_boom) {
+                const rocket = new Bullet(
+                    this.x + this.width / 2 - 8,
+                    this.y,
+                    '#ff3333',
+                    0,
+                    this.id,
+                    'rocket_boom'
+                );
+                playerBullets.push(rocket);
+                sfx.playShootPlayer();
+            }
+        }
+        if (this.id === 1 && !keys['KeyQ']) {
+            this.qWasDown = false;
         }
 
         // Shield Logic
@@ -1137,20 +1160,28 @@ class Bullet {
         this.ownerId = ownerId;
         this.type = type;
 
-        const player = players.find(p => p.id === ownerId) || { upgrades: { sword_swing: 1 } };
+        const player = players.find(p => p.id === ownerId) || { upgrades: { sword_swing: 1, rocket_boom: 1 } };
         const swordLevel = player.upgrades.sword_swing || 1;
+        const rocketLevel = player.upgrades.rocket_boom || 1;
 
-        this.width = widthOverride !== null ? widthOverride : (type === 'laser' ? 20 : (type === 'sword_swing' ? 24 + swordLevel * 4 : 4));
-        this.height = type === 'laser' ? canvas.height : (type === 'sword_swing' ? 24 + swordLevel * 4 : 10);
+        this.width = widthOverride !== null ? widthOverride : (type === 'laser' ? 20 : (type === 'sword_swing' ? 24 + swordLevel * 4 : (type === 'rocket_boom' ? 16 : 4)));
+        this.height = type === 'laser' ? canvas.height : (type === 'sword_swing' ? 24 + swordLevel * 4 : (type === 'rocket_boom' ? 24 : 10));
         this.color = color;
         this.speed = speed;
-        this.life = type === 'laser' ? 10 : (type === 'sword_swing' ? 400 : 100); // Sword swing has 400 frames of life max
+        this.life = type === 'laser' ? 10 : (type === 'sword_swing' ? 400 : (type === 'rocket_boom' ? 1000 : 100)); // Sword swing has 400 frames of life max
 
         if (type === 'sword_swing') {
             this.state = 'FORWARD'; // 'FORWARD' or 'RETURNING'
             this.hitTargets = new Set();
             this.rotation = 0;
             this.speedY = speed;
+        } else if (type === 'rocket_boom') {
+            this.state = 'PLANTED'; // 'PLANTED', 'FIRED', 'EXPLODING'
+            this.plantTimer = 60; // 1 second countdown
+            this.explosionTimer = 0;
+            this.maxExplosionTime = 30;
+            this.explosionRadius = 70 + rocketLevel * 10;
+            this.hitTargets = new Set();
         }
     }
 
@@ -1199,6 +1230,58 @@ class Bullet {
             ctx.beginPath();
             ctx.arc(0, 26, 4, 0, Math.PI * 2);
             ctx.fill();
+        } else if (this.type === 'rocket_boom') {
+            if (this.state === 'EXPLODING') {
+                ctx.beginPath();
+                ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.explosionRadius * (this.explosionTimer / this.maxExplosionTime), 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 69, 0, ${1 - this.explosionTimer / this.maxExplosionTime})`;
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(this.x + this.width / 2, this.y + this.height / 2, (this.explosionRadius * 0.6) * (this.explosionTimer / this.maxExplosionTime), 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 215, 0, ${0.8 * (1 - this.explosionTimer / this.maxExplosionTime)})`;
+                ctx.fill();
+            } else {
+                ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+                
+                if (this.state === 'PLANTED') {
+                    const pulse = 1 + Math.sin(Date.now() * 0.015) * 0.1;
+                    ctx.scale(pulse, pulse);
+                    
+                    // Draw blinking light
+                    ctx.fillStyle = (Math.floor(Date.now() / 150) % 2 === 0) ? '#ff003c' : '#7f0000';
+                    ctx.beginPath();
+                    ctx.arc(0, -this.height / 2 + 4, 3, 0, Math.PI * 2);
+                    ctx.fill();
+                } else if (this.state === 'FIRED') {
+                    // Flame
+                    ctx.fillStyle = '#ff6b00';
+                    ctx.beginPath();
+                    ctx.moveTo(-4, this.height / 2);
+                    ctx.lineTo(4, this.height / 2);
+                    ctx.lineTo(0, this.height / 2 + 8 + Math.random() * 6);
+                    ctx.closePath();
+                    ctx.fill();
+                }
+                
+                // Rocket body
+                ctx.fillStyle = '#d3d3d3';
+                ctx.fillRect(-this.width / 2, -this.height / 2 + 6, this.width, this.height - 6);
+                
+                // Cone tip
+                ctx.fillStyle = '#ff003c';
+                ctx.beginPath();
+                ctx.moveTo(0, -this.height / 2);
+                ctx.lineTo(this.width / 2, -this.height / 2 + 6);
+                ctx.lineTo(-this.width / 2, -this.height / 2 + 6);
+                ctx.closePath();
+                ctx.fill();
+                
+                // Fins
+                ctx.fillStyle = '#ff003c';
+                ctx.fillRect(-this.width / 2 - 4, this.height / 2 - 6, 4, 6);
+                ctx.fillRect(this.width / 2, this.height / 2 - 6, 4, 6);
+            }
         } else {
             ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
             if (this.ownerId === 1) {
@@ -1264,6 +1347,26 @@ class Bullet {
                         this.x += (dx / dist) * speed;
                         this.y += (dy / dist) * speed;
                     }
+                }
+            }
+        } else if (this.type === 'rocket_boom') {
+            if (this.state === 'PLANTED') {
+                this.plantTimer--;
+                if (this.plantTimer <= 0) {
+                    this.state = 'FIRED';
+                    this.speedY = -8;
+                }
+            } else if (this.state === 'FIRED') {
+                this.y += this.speedY;
+                if (this.y <= 0) {
+                    this.state = 'EXPLODING';
+                    this.speedY = 0;
+                    this.explodedAtBoundary = true;
+                }
+            } else if (this.state === 'EXPLODING') {
+                this.explosionTimer++;
+                if (this.explosionTimer >= this.maxExplosionTime) {
+                    this.life = 0;
                 }
             }
         } else {
@@ -1745,6 +1848,61 @@ function gameLoop() {
 
         const player = players.find(p => p.id === b.ownerId) || players[0];
         
+        // Handle rocket_boom special collision and explosion check
+        if (b.type === 'rocket_boom') {
+            let shouldExplode = false;
+            if (b.state === 'FIRED') {
+                if (boss && b.x < boss.x + boss.width && b.x + b.width > boss.x && b.y < boss.y + boss.height && b.y + b.height > boss.y) {
+                    shouldExplode = true;
+                }
+                if (!shouldExplode) {
+                    for (let i = 0; i < invaders.length; i++) {
+                        const inv = invaders[i];
+                        if (invadersToRemove.has(inv)) continue;
+                        if (b.x < inv.x + inv.width && b.x + b.width > inv.x && b.y < inv.y + inv.height && b.y + b.height > inv.y) {
+                            shouldExplode = true;
+                            break;
+                        }
+                    }
+                }
+            } else if (b.state === 'EXPLODING' && b.explodedAtBoundary) {
+                shouldExplode = true;
+                b.explodedAtBoundary = false;
+            }
+
+            if (shouldExplode) {
+                b.state = 'EXPLODING';
+                b.speedY = 0;
+                sfx.playExplosion();
+
+                const dmg = 3 + (player.upgrades.rocket_boom || 1) * 2;
+
+                if (boss) {
+                    const dist = Math.hypot((b.x + b.width / 2) - (boss.x + boss.width / 2), (b.y + b.height / 2) - (boss.y + boss.height / 2));
+                    if (dist < b.explosionRadius) {
+                        boss.hp -= dmg * 2;
+                        if (boss.hp <= 0) {
+                            player.score += 1000;
+                            boss = null;
+                        }
+                    }
+                }
+
+                invaders.forEach(inv => {
+                    if (invadersToRemove.has(inv)) return;
+                    const dist = Math.hypot((b.x + b.width / 2) - (inv.x + inv.width / 2), (b.y + b.height / 2) - (inv.y + inv.height / 2));
+                    if (dist < b.explosionRadius) {
+                        inv.hp -= dmg;
+                        if (inv.hp <= 0) {
+                            invadersToRemove.add(inv);
+                            player.score += 100;
+                        }
+                    }
+                });
+            }
+            return;
+        }
+        
         // Boss collision
         if (boss) {
             if (b.x < boss.x + boss.width && b.x + b.width > boss.x && b.y < boss.y + boss.height && b.y + b.height > boss.y) {
@@ -1968,7 +2126,7 @@ function showUpgradeScreen() {
     const player = players[currentUpgradingPlayer];
     
     // Pick 2 random upgrades that are not at cap
-    const allUpgrades = ['rapid', 'explosion', 'laser', 'freeze', 'speed', 'shield', 'shockwave', 'drone', 'sword_swing'];
+    const allUpgrades = ['rapid', 'explosion', 'laser', 'freeze', 'speed', 'shield', 'shockwave', 'drone', 'sword_swing', 'rocket_boom'];
     const availableUpgrades = allUpgrades.filter(type => {
         if (type === 'rapid') return player.upgrades.rapid < 9;
         if (type === 'explosion') return player.upgrades.explosion < 1.0;
@@ -1979,6 +2137,7 @@ function showUpgradeScreen() {
         if (type === 'shockwave') return player.upgrades.shockwave < 10;
         if (type === 'drone') return player.upgrades.drone < 10;
         if (type === 'sword_swing') return player.upgrades.sword_swing < 10;
+        if (type === 'rocket_boom') return player.upgrades.rocket_boom < 10;
         return true;
     });
 
@@ -2057,6 +2216,7 @@ function updateUpgradeOverlay() {
         else if (type === 'shockwave') info = `${lvlWord} ${toRoman(player.upgrades.shockwave)}/${toRoman(10)}`;
         else if (type === 'drone') info = `${lvlWord} ${toRoman(player.upgrades.drone)}/${toRoman(10)}`;
         else if (type === 'sword_swing') info = `${lvlWord} ${toRoman(player.upgrades.sword_swing)}/${toRoman(10)}`;
+        else if (type === 'rocket_boom') info = `${lvlWord} ${toRoman(player.upgrades.rocket_boom)}/${toRoman(10)}`;
         
         const infoEl = card.querySelector('.level-info');
         if (infoEl) infoEl.textContent = info;
@@ -2088,6 +2248,8 @@ function selectUpgrade(type) {
         player.upgrades.drone += 1;
     } else if (type === 'sword_swing' && player.upgrades.sword_swing < 10) {
         player.upgrades.sword_swing += 1;
+    } else if (type === 'rocket_boom' && player.upgrades.rocket_boom < 10) {
+        player.upgrades.rocket_boom += 1;
     }
 
     if (playerMode === 2 && currentUpgradingPlayer === 0) {
@@ -2536,7 +2698,9 @@ const LOCALIZATION = {
         upgrade_drone_desc: "Press X to spawn helper drones",
         keep_drones_label: "DRONES LOCKED",
         upgrade_sword_swing_title: "SWORD SWING",
-        upgrade_sword_swing_desc: "Press I to throw a returning spinning sword"
+        upgrade_sword_swing_desc: "Press I to throw a returning spinning sword",
+        upgrade_rocket_boom_title: "ROCKET BOOM",
+        upgrade_rocket_boom_desc: "Press Q to plant a delayed rocket"
     },
     es: {
         title: "¡ZAPEA AL INVASOR!",
@@ -2632,7 +2796,9 @@ const LOCALIZATION = {
         upgrade_drone_desc: "Presiona X para lanzar drones ayudantes",
         keep_drones_label: "DRONES BLOQUEADOS",
         upgrade_sword_swing_title: "ESPADA GIRATORIA",
-        upgrade_sword_swing_desc: "Presiona I para lanzar una espada giratoria que regresa"
+        upgrade_sword_swing_desc: "Presiona I para lanzar una espada giratoria que regresa",
+        upgrade_rocket_boom_title: "COHETE BUM",
+        upgrade_rocket_boom_desc: "Presiona Q para plantar un cohete retrasado"
     },
     fr: {
         title: "ZAPPER LA CHOSE !",
@@ -2728,7 +2894,9 @@ const LOCALIZATION = {
         upgrade_drone_desc: "Appuyez sur X pour lancer des drônes",
         keep_drones_label: "DRÔNES RETENUS",
         upgrade_sword_swing_title: "COUP D'ÉPÉE",
-        upgrade_sword_swing_desc: "Appuyez sur I pour lancer une épée tournante qui revient"
+        upgrade_sword_swing_desc: "Appuyez sur I pour lancer une épée tournante qui revient",
+        upgrade_rocket_boom_title: "BOUM DE ROQUETTE",
+        upgrade_rocket_boom_desc: "Appuyez sur Q pour planter une roquette à retardement"
     },
     de: {
         title: "ZAP DAS DING!",
@@ -2824,7 +2992,9 @@ const LOCALIZATION = {
         upgrade_drone_desc: "Drücke X um Helferdrohnen zu rufen",
         keep_drones_label: "DROHNEN GESICHERT",
         upgrade_sword_swing_title: "SCHWERTSCHWUNG",
-        upgrade_sword_swing_desc: "Drücke I, um ein zurückkehrendes, rotierendes Schwert zu werfen"
+        upgrade_sword_swing_desc: "Drücke I, um ein zurückkehrendes, rotierendes Schwert zu werfen",
+        upgrade_rocket_boom_title: "RAKETEN-BOOM",
+        upgrade_rocket_boom_desc: "Drücke Q, um eine verzögerte Rakete zu platzieren"
     },
     ja: {
         title: "ザップ・ザ・シング！",
@@ -2920,7 +3090,9 @@ const LOCALIZATION = {
         upgrade_drone_desc: "Xキーで赤いドローンを召喚",
         keep_drones_label: "ドローン固定",
         upgrade_sword_swing_title: "ソードスイング",
-        upgrade_sword_swing_desc: "Iキーで戻ってくる回転する剣を投げる"
+        upgrade_sword_swing_desc: "Iキーで戻ってくる回転する剣を投げる",
+        upgrade_rocket_boom_title: "ロケットブーム",
+        upgrade_rocket_boom_desc: "Qキーで時限ロケットを設置する"
     }
 };
 
@@ -2963,7 +3135,8 @@ function applyTheme(themeName) {
             '--deep-blue': '#0d1b2a',
             '--bg-card': '#1b263b',
             '--canvas-bg': '#000000',
-            '--body-bg': '#000000'
+            '--body-bg': '#000000',
+            '--soft-blue': '#a2d2ff'
         },
         'black': {
             '--bg-color': '#111111',
@@ -2972,7 +3145,8 @@ function applyTheme(themeName) {
             '--deep-blue': '#111111',
             '--bg-card': '#222222',
             '--canvas-bg': '#000000',
-            '--body-bg': '#000000'
+            '--body-bg': '#000000',
+            '--soft-blue': '#ffffff'
         },
         'purple': {
             '--bg-color': '#240046',
@@ -2981,7 +3155,8 @@ function applyTheme(themeName) {
             '--deep-blue': '#240046',
             '--bg-card': '#3c096c',
             '--canvas-bg': '#10002b',
-            '--body-bg': '#0f021a'
+            '--body-bg': '#0f021a',
+            '--soft-blue': '#ffbe0b'
         },
         'green': {
             '--bg-color': '#0d2611',
@@ -2990,7 +3165,8 @@ function applyTheme(themeName) {
             '--deep-blue': '#0d2611',
             '--bg-card': '#1b4d22',
             '--canvas-bg': '#001102',
-            '--body-bg': '#020d04'
+            '--body-bg': '#020d04',
+            '--soft-blue': '#a7ffeb'
         },
         'red': {
             '--bg-color': '#2d0a0d',
@@ -2999,7 +3175,8 @@ function applyTheme(themeName) {
             '--deep-blue': '#2d0a0d',
             '--bg-card': '#4a151b',
             '--canvas-bg': '#180406',
-            '--body-bg': '#140204'
+            '--body-bg': '#140204',
+            '--soft-blue': '#ffccd5'
         }
     };
     
