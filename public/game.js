@@ -234,6 +234,7 @@ let drones = [];
 let keepDrones = false;
 let hWasDown = false;
 let level = 1;
+let swordSwingShown = false;
 let animationId;
 let currentUpgradingPlayer = 0;
 let heart = null;
@@ -459,7 +460,8 @@ class Player {
         }
 
         // Sword Swing logic (Press I)
-        if (this.id === 1 && keys['KeyI'] && this.upgrades.sword_swing > 0 && !this.iWasDown) {
+        const activeSwordsCount = playerBullets.filter(b => b.type === 'sword_swing' && b.ownerId === this.id).length;
+        if (this.id === 1 && keys['KeyI'] && this.upgrades.sword_swing > 0 && !this.iWasDown && activeSwordsCount < this.upgrades.sword_swing) {
             this.iWasDown = true;
             const swordSpeed = -5; // Initial upward speed
             const sword = new Bullet(
@@ -1590,6 +1592,7 @@ function startGame() {
     invaderBullets = [];
     drones = [];
     level = 1;
+    swordSwingShown = false;
     initInvaders();
     updateLivesUI();
 
@@ -1980,8 +1983,19 @@ function showUpgradeScreen() {
     });
 
     // Shuffle and pick 2
-    const shuffled = availableUpgrades.sort(() => 0.5 - Math.random());
-    const selected = shuffled.slice(0, 2);
+    let selected = [];
+    if (level === 5 && !swordSwingShown && availableUpgrades.includes('sword_swing')) {
+        const remaining = availableUpgrades.filter(type => type !== 'sword_swing');
+        const shuffled = remaining.sort(() => 0.5 - Math.random());
+        selected = ['sword_swing'].concat(shuffled.slice(0, 1));
+    } else {
+        const shuffled = availableUpgrades.sort(() => 0.5 - Math.random());
+        selected = shuffled.slice(0, 2);
+    }
+
+    if (selected.includes('sword_swing')) {
+        swordSwingShown = true;
+    }
 
     if (selected.length === 0) {
         // No upgrades available for any player, skip to next round
@@ -2308,6 +2322,7 @@ function initUIListeners() {
             totalLives = 3;
             maxLives = 3;
             level = 1;
+            swordSwingShown = false;
             document.getElementById('game-over-screen').classList.remove('active');
             document.getElementById('setup-screen').classList.add('active');
             loadScores();
