@@ -3018,6 +3018,7 @@ function applyTheme(themeName) {
             btn.classList.add('active');
         }
     });
+    setTimeout(adjustBrightBackgroundText, 50);
 }
 
 function updateDynamicTexts() {
@@ -3034,6 +3035,7 @@ function updateDynamicTexts() {
     if (gameState === 'UPGRADING' && players && players[currentUpgradingPlayer]) {
         updateUpgradeOverlay();
     }
+    setTimeout(adjustBrightBackgroundText, 50);
 }
 
 // Initial Load
@@ -3064,3 +3066,51 @@ window.addEventListener('mousedown', () => {
         if (gameState === 'SETUP') sfx.playIntroBGM();
     } catch (e) {}
 }, { once: true });
+
+function adjustBrightBackgroundText() {
+    const elements = document.querySelectorAll('button, input, span, p, h1, h2, h3, div.card, ol, li, label');
+    elements.forEach(el => {
+        el.style.color = ''; // Reset to default CSS
+        
+        let bgColor = getComputedBgColor(el);
+        if (!bgColor) return;
+        
+        const rgb = bgColor.match(/\d+/g);
+        if (!rgb || rgb.length < 3) return;
+        
+        const r = parseInt(rgb[0], 10);
+        const g = parseInt(rgb[1], 10);
+        const b = parseInt(rgb[2], 10);
+        const a = rgb.length >= 4 ? parseFloat(rgb[3]) : 1;
+        
+        if (a < 0.1) return; // transparent
+        
+        const brightness = (r * 299 + g * 587 + b * 114) / 1000;
+        if (brightness > 170) {
+            const compColor = window.getComputedStyle(el).color;
+            const textRgb = compColor.match(/\d+/g);
+            if (textRgb && textRgb.length >= 3) {
+                const tr = parseInt(textRgb[0], 10);
+                const tg = parseInt(textRgb[1], 10);
+                const tb = parseInt(textRgb[2], 10);
+                const textBrightness = (tr * 299 + tg * 587 + tb * 114) / 1000;
+                
+                if (textBrightness > 100) {
+                    el.style.color = '#ff003c'; // Make text red on bright backgrounds
+                }
+            }
+        }
+    });
+}
+
+function getComputedBgColor(el) {
+    let current = el;
+    while (current) {
+        const bg = window.getComputedStyle(current).backgroundColor;
+        if (bg && bg !== 'transparent' && bg !== 'rgba(0, 0, 0, 0)' && bg !== 'initial' && bg !== 'inherit') {
+            return bg;
+        }
+        current = current.parentElement;
+    }
+    return null;
+}
