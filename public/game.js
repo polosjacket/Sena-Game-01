@@ -3393,6 +3393,61 @@ function applyTheme(themeName) {
         root.style.setProperty(key, value);
     }
     
+    // Spawn theme-specific background decorations
+    const container = document.getElementById('theme-decorations');
+    if (container) {
+        container.innerHTML = '';
+        if (themeName === 'black') {
+            const pos = [
+                { top: '15%', left: '8%' },
+                { top: '65%', right: '8%' }
+            ];
+            pos.forEach(p => {
+                const el = document.createElement('div');
+                el.className = 'yin-yang-deco';
+                el.textContent = '☯';
+                if (p.left) el.style.left = p.left;
+                if (p.right) el.style.right = p.right;
+                el.style.top = p.top;
+                container.appendChild(el);
+            });
+        } else if (themeName === 'red') {
+            for (let idx = 0; idx < 30; idx++) {
+                const el = document.createElement('div');
+                el.className = 'flame-deco';
+                el.style.left = `${Math.random() * 100}vw`;
+                el.style.animationDelay = `${Math.random() * 4}s`;
+                el.style.animationDuration = `${3 + Math.random() * 2}s`;
+                container.appendChild(el);
+            }
+        } else if (themeName === 'green') {
+            const pos = [
+                { top: '20%', right: '10%' },
+                { top: '60%', left: '6%' }
+            ];
+            pos.forEach(p => {
+                const el = document.createElement('div');
+                el.className = 'radioactive-deco';
+                el.textContent = '☢';
+                if (p.left) el.style.left = p.left;
+                if (p.right) el.style.right = p.right;
+                el.style.top = p.top;
+                container.appendChild(el);
+            });
+        } else if (themeName === 'blue') {
+            for (let idx = 0; idx < 28; idx++) {
+                const el = document.createElement('div');
+                el.className = 'icicle-deco';
+                el.style.left = `${idx * 3.6 + 0.5}%`;
+                el.style.borderTopWidth = `${60 + Math.random() * 60}px`;
+                el.style.borderLeftWidth = `${8 + Math.random() * 6}px`;
+                el.style.borderRightWidth = `${8 + Math.random() * 6}px`;
+                el.style.animationDelay = `${Math.random() * 3}s`;
+                container.appendChild(el);
+            }
+        }
+    }
+    
     document.querySelectorAll('.theme-btn').forEach(btn => {
         btn.classList.remove('active');
         if (btn.dataset.theme === themeName) {
