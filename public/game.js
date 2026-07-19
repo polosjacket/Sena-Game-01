@@ -235,6 +235,7 @@ let keepDrones = false;
 let hWasDown = false;
 let level = 1;
 let swordSwingShown = false;
+let wasPausedBeforeSettings = false;
 let animationId;
 let currentUpgradingPlayer = 0;
 let heart = null;
@@ -482,7 +483,10 @@ class Player {
         }
 
         // Rocket-Boom logic (Press Q)
-        const activeRocketsCount = playerBullets.filter(b => b.type === 'rocket_boom' && b.ownerId === this.id).length;
+        const activeRocketsCount = playerBullets.filter(b => b.type === 'rocket_boom' && b.ownerId === this.id && b.state !== 'EXPLODING').length;
+        if (this.id === 1 && keys['KeyQ'] && !this.qWasDown) {
+            console.log('Q pressed! rocket_boom level:', this.upgrades.rocket_boom, 'activeRocketsCount:', activeRocketsCount, 'bullets list:', playerBullets.map(b => `${b.type}:${b.state}:life=${b.life}`));
+        }
         if (this.id === 1 && keys['KeyQ'] && this.upgrades.rocket_boom > 0 && !this.qWasDown) {
             this.qWasDown = true;
             if (activeRocketsCount < this.upgrades.rocket_boom) {
@@ -1835,6 +1839,7 @@ function gameLoop() {
     playerBullets = playerBullets.filter(b => {
         if (b.type === 'laser') return b.life > 0;
         if (b.type === 'sword_swing') return b.life > 0;
+        if (b.type === 'rocket_boom') return b.life > 0;
         return b.y > 0;
     });
     /**
@@ -2551,9 +2556,16 @@ function initUIListeners() {
     // Settings Overlay Listeners
     safeAddListener('settings-btn', 'click', () => {
         document.getElementById('settings-overlay').classList.add('active');
+        wasPausedBeforeSettings = (gameState === 'PAUSED');
+        if (gameState === 'PLAYING') {
+            gameState = 'PAUSED';
+        }
     });
     safeAddListener('close-settings', 'click', () => {
         document.getElementById('settings-overlay').classList.remove('active');
+        if (gameState === 'PAUSED' && !wasPausedBeforeSettings) {
+            gameState = 'PLAYING';
+        }
     });
     
     document.querySelectorAll('.lang-btn').forEach(btn => {

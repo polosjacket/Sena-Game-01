@@ -723,7 +723,8 @@ button {
 }
 
 /* Show settings button only when setup screen is active */
-#setup-screen.active ~ #settings-btn {
+#setup-screen.active ~ #settings-btn,
+#game-screen.active ~ #settings-btn {
     display: flex;
 }
 
