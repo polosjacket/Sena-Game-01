@@ -151,9 +151,25 @@ class SoundEffects {
 
     playIntroBGM() {
         if (!this.ctx || this.bgmOsc) return;
-        const tempo = 80;
+        const tempo = 100; // Driving retro beat tempo
         const beat = 60 / tempo;
-        const melody = [261.63, 293.66, 311.13, 349.23]; // C D Eb F
+        
+        // Lead chord progression: Cmaj -> Dmin -> Ebmaj -> Fmaj
+        const leadMelody = [
+            261.63, 329.63, 392.00, 329.63, // C E G E
+            293.66, 349.23, 440.00, 349.23, // D F A F
+            311.13, 392.00, 466.16, 392.00, // Eb G Bb G
+            349.23, 440.00, 523.25, 440.00  // F A C A
+        ];
+        
+        // Deep analog bass line matching lead chords
+        const bassMelody = [
+            130.81, 130.81, // C3
+            146.83, 146.83, // D3
+            155.56, 155.56, // Eb3
+            174.61, 174.61  // F3
+        ];
+        
         let i = 0;
 
         const nextNote = () => {
@@ -161,15 +177,59 @@ class SoundEffects {
                 this.bgmOsc = null;
                 return;
             }
+            
+            // 1. Play Lead Note (Warm triangle wave)
             const osc = this.ctx.createOscillator();
             const gain = this.ctx.createGain();
-            osc.type = 'sine';
-            osc.frequency.value = melody[i % melody.length];
-            gain.gain.value = 0.03;
+            osc.type = 'triangle';
+            osc.frequency.value = leadMelody[i % leadMelody.length];
+            gain.gain.setValueAtTime(0.04, this.ctx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + beat * 0.7);
             osc.connect(gain);
             gain.connect(this.ctx.destination);
             osc.start();
-            osc.stop(this.ctx.currentTime + beat * 0.8);
+            osc.stop(this.ctx.currentTime + beat * 0.7);
+
+            // 2. Play Echo/Delay effect (softer, 150ms delay)
+            setTimeout(() => {
+                if (gameState !== 'SETUP') return;
+                const echoOsc = this.ctx.createOscillator();
+                const echoGain = this.ctx.createGain();
+                echoOsc.type = 'triangle';
+                echoOsc.frequency.value = leadMelody[i % leadMelody.length];
+                echoGain.gain.setValueAtTime(0.015, this.ctx.currentTime);
+                echoGain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + beat * 0.4);
+                echoOsc.connect(echoGain);
+                echoGain.connect(this.ctx.destination);
+                echoOsc.start();
+                echoOsc.stop(this.ctx.currentTime + beat * 0.4);
+            }, 150);
+
+            // 3. Play deep analog bass line (every 2 beats)
+            if (i % 2 === 0) {
+                const bassOsc = this.ctx.createOscillator();
+                const bassGain = this.ctx.createGain();
+                bassOsc.type = 'sawtooth'; // Sawtooth wave for rich analog bass timbre
+
+                // Low-pass filter to keep bass warm and muddy, eliminating harsh high frequencies
+                const filter = this.ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.value = 200;
+
+                const bassIdx = Math.floor(i / 2) % bassMelody.length;
+                bassOsc.frequency.value = bassMelody[bassIdx];
+                
+                bassGain.gain.setValueAtTime(0.03, this.ctx.currentTime);
+                bassGain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + beat * 1.6);
+                
+                bassOsc.connect(filter);
+                filter.connect(bassGain);
+                bassGain.connect(this.ctx.destination);
+                
+                bassOsc.start();
+                bassOsc.stop(this.ctx.currentTime + beat * 1.6);
+            }
+
             i++;
             setTimeout(nextNote, beat * 1000);
         };
@@ -453,12 +513,13 @@ class Player {
             this.y += 2; // Automatic drift back to baseline
         }
 
-        // Drone spawn logic (Press X)
-        if (this.id === 1 && keys['KeyX'] && !this.xWasDown) {
+        // Drone spawn logic
+        const isDroneKey = (this.keys && this.keys.drone) ? keys[this.keys.drone] : false;
+        if (isDroneKey && !this.xWasDown) {
             this.xWasDown = true;
             this.spawnDrone();
         }
-        if (this.id === 1 && !keys['KeyX']) {
+        if (!isDroneKey) {
             this.xWasDown = false;
         }
 
@@ -484,9 +545,6 @@ class Player {
 
         // Rocket-Boom logic (Press Q)
         const activeRocketsCount = playerBullets.filter(b => b.type === 'rocket_boom' && b.ownerId === this.id && b.state !== 'EXPLODING').length;
-        if (this.id === 1 && keys['KeyQ'] && !this.qWasDown) {
-            console.log('Q pressed! rocket_boom level:', this.upgrades.rocket_boom, 'activeRocketsCount:', activeRocketsCount, 'bullets list:', playerBullets.map(b => `${b.type}:${b.state}:life=${b.life}`));
-        }
         if (this.id === 1 && keys['KeyQ'] && this.upgrades.rocket_boom > 0 && !this.qWasDown) {
             this.qWasDown = true;
             if (activeRocketsCount < this.upgrades.rocket_boom) {
@@ -928,6 +986,8 @@ class Boss {
         this.slamTimer = 0;
         this.sideDir = 0;
         this.laserX = -100;
+        this.rotation = 0;
+        this.shootTimer = 0;
     }
 
     draw() {
@@ -942,84 +1002,67 @@ class Boss {
             ctx.fillRect(this.x + this.width/2 - 20, this.y + this.height, 40, canvas.height);
         }
 
-        // Duolingo Owl Body (Rounded bird type)
-        ctx.fillStyle = this.color;
-        
-        // Draw main body (rounded rectangle)
-        ctx.beginPath();
-        const radius = 40;
-        ctx.roundRect(this.x, this.y, this.width, this.height, radius);
-        ctx.fill();
+        // Draw spinning sci-fi geometric octagon
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height / 2;
+        const numSides = 8;
+        const r = this.width / 2;
 
-        // Wings
-        ctx.beginPath();
-        ctx.ellipse(this.x - 10, this.y + 60, 20, 40, Math.PI/6, 0, Math.PI * 2);
-        ctx.ellipse(this.x + this.width + 10, this.y + 60, 20, 40, -Math.PI/6, 0, Math.PI * 2);
-        ctx.fill();
-
-        // Ears (Tufts)
-        ctx.beginPath();
-        ctx.moveTo(this.x + 10, this.y);
-        ctx.lineTo(this.x + 30, this.y - 20);
-        ctx.lineTo(this.x + 50, this.y);
-        ctx.fill();
+        ctx.save();
+        
+        // Outer glowing neon octagon
+        ctx.shadowBlur = 15;
+        ctx.shadowColor = '#00f0ff';
+        ctx.strokeStyle = '#00f0ff';
+        ctx.lineWidth = 6;
         
         ctx.beginPath();
-        ctx.moveTo(this.x + this.width - 10, this.y);
-        ctx.lineTo(this.x + this.width - 30, this.y - 20);
-        ctx.lineTo(this.x + this.width - 50, this.y);
-        ctx.fill();
-        
-        // Beak
-        ctx.fillStyle = '#ffc800';
-        ctx.beginPath();
-        ctx.moveTo(this.x + this.width / 2 - 15, this.y + 55);
-        ctx.lineTo(this.x + this.width / 2 + 15, this.y + 55);
-        ctx.lineTo(this.x + this.width / 2, this.y + 80);
-        ctx.fill();
-
-        // Eyes (Staring menacingly)
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath();
-        ctx.arc(this.x + 30, this.y + 35, 18, 0, Math.PI * 2);
-        ctx.arc(this.x + this.width - 30, this.y + 35, 18, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.fillStyle = '#000000';
-        // Angry pupils
-        ctx.beginPath();
-        ctx.arc(this.x + 30, this.y + 35, 8, 0, Math.PI * 2);
-        ctx.arc(this.x + this.width - 30, this.y + 35, 8, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Draw Knives (instead of fingers)
-        if (this.level >= 10) {
-            const drawKnife = (kx, ky) => {
-                // Handle
-                ctx.fillStyle = '#5c4033'; 
-                ctx.fillRect(kx + 5, ky + 25, 10, 25);
-                // Guard
-                ctx.fillStyle = '#7f8c8d';
-                ctx.fillRect(kx, ky + 25, 20, 5);
-                // Blade
-                ctx.fillStyle = '#ecf0f1';
-                ctx.beginPath();
-                ctx.moveTo(kx + 5, ky + 25);
-                ctx.lineTo(kx + 15, ky + 25);
-                ctx.lineTo(kx + 10, ky - 10); // Sharp point
-                ctx.fill();
-                // Blood detail on blade
-                ctx.fillStyle = '#e74c3c';
-                ctx.fillRect(kx + 10, ky, 2, 10);
-            };
-
-            // Left Knives
-            if (this.level >= 10) drawKnife(this.x - 30, this.y + 20);
-            if (this.level >= 30) drawKnife(this.x - 60, this.y + 20);
-            // Right Knives
-            if (this.level >= 20) drawKnife(this.x + this.width + 10, this.y + 20);
-            if (this.level >= 40) drawKnife(this.x + this.width + 40, this.y + 20);
+        for (let i = 0; i < numSides; i++) {
+            const angle = i * (Math.PI * 2 / numSides) + this.rotation;
+            const px = cx + r * Math.cos(angle);
+            const py = cy + r * Math.sin(angle);
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
         }
+        ctx.closePath();
+        ctx.stroke();
+        
+        // Inner glowing magenta octagon
+        ctx.shadowColor = '#ff00ff';
+        ctx.strokeStyle = '#ff00ff';
+        ctx.lineWidth = 3;
+        
+        ctx.beginPath();
+        for (let i = 0; i < numSides; i++) {
+            const angle = i * (Math.PI * 2 / numSides) + this.rotation;
+            const px = cx + (r * 0.6) * Math.cos(angle);
+            const py = cy + (r * 0.6) * Math.sin(angle);
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+        }
+        ctx.closePath();
+        ctx.stroke();
+        
+        // Geometric inner spokes connecting vertices to center core
+        ctx.shadowBlur = 5;
+        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+        for (let i = 0; i < numSides; i++) {
+            const angle = i * (Math.PI * 2 / numSides) + this.rotation;
+            ctx.beginPath();
+            ctx.moveTo(cx, cy);
+            ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+            ctx.stroke();
+        }
+        
+        // Core glowing red/orange energy eye in the center
+        ctx.shadowColor = '#ff3333';
+        ctx.fillStyle = '#ff3333';
+        ctx.beginPath();
+        ctx.arc(cx, cy, 14 + Math.sin(Date.now() * 0.01) * 3, 0, Math.PI * 2);
+        ctx.fill();
+        
+        ctx.restore();
 
         
         // Health Bar
@@ -1147,8 +1190,36 @@ class Boss {
             }
         }
 
-        if (Math.random() < 0.05) {
-            invaderBullets.push(new Bullet(this.x + Math.random() * this.width, this.y + this.height, '#ff0054', 4));
+        // Update rotation and shoot timer
+        this.rotation += 0.012;
+        this.shootTimer++;
+
+        const cx = this.x + this.width / 2;
+        const cy = this.y + this.height / 2;
+        const r = this.width / 2;
+
+        // Shoot from corners and throw bombs during IDLE state
+        if (this.attackState === 'IDLE') {
+            // Firing bullets from the 8 corners of the shape
+            if (this.shootTimer % 90 === 0) {
+                for (let i = 0; i < 8; i++) {
+                    const angle = i * (Math.PI * 2 / 8) + this.rotation;
+                    const bx = cx + r * Math.cos(angle);
+                    const by = cy + r * Math.sin(angle);
+                    const bullet = new Bullet(bx, by, '#00f0ff', 3.5, null, 'boss_corner');
+                    bullet.speedX = Math.cos(angle) * 3.5;
+                    bullet.speedY = Math.sin(angle) * 3.5;
+                    invaderBullets.push(bullet);
+                }
+                sfx.playShootPlayer();
+            }
+
+            // Throwing a bomb that falls to the ground and explodes
+            if (this.shootTimer % 150 === 0) {
+                const bomb = new Bullet(cx - 10, cy, '#ff5500', 3, null, 'boss_bomb');
+                invaderBullets.push(bomb);
+                sfx.playShootPlayer();
+            }
         }
 
         if (this.y + this.height > canvas.height - 50) {
@@ -1168,11 +1239,13 @@ class Bullet {
         const swordLevel = player.upgrades.sword_swing || 1;
         const rocketLevel = player.upgrades.rocket_boom || 1;
 
-        this.width = widthOverride !== null ? widthOverride : (type === 'laser' ? 20 : (type === 'sword_swing' ? 24 + swordLevel * 4 : (type === 'rocket_boom' ? 16 : 4)));
-        this.height = type === 'laser' ? canvas.height : (type === 'sword_swing' ? 24 + swordLevel * 4 : (type === 'rocket_boom' ? 24 : 10));
+        this.width = widthOverride !== null ? widthOverride : (type === 'laser' ? 20 : (type === 'sword_swing' ? 24 + swordLevel * 4 : (type === 'rocket_boom' ? 16 : (type === 'boss_bomb' ? 20 : (type === 'boss_corner' ? 8 : 4)))));
+        this.height = type === 'laser' ? canvas.height : (type === 'sword_swing' ? 24 + swordLevel * 4 : (type === 'rocket_boom' ? 24 : (type === 'boss_bomb' ? 20 : (type === 'boss_corner' ? 8 : 10))));
         this.color = color;
         this.speed = speed;
-        this.life = type === 'laser' ? 10 : (type === 'sword_swing' ? 400 : (type === 'rocket_boom' ? 1000 : 100)); // Sword swing has 400 frames of life max
+        this.speedX = 0;
+        this.speedY = speed;
+        this.life = type === 'laser' ? 10 : (type === 'sword_swing' ? 400 : (type === 'rocket_boom' ? 1000 : (type === 'boss_bomb' ? 1000 : 100)));
 
         if (type === 'sword_swing') {
             this.state = 'FORWARD'; // 'FORWARD' or 'RETURNING'
@@ -1185,6 +1258,12 @@ class Bullet {
             this.explosionTimer = 0;
             this.maxExplosionTime = 30;
             this.explosionRadius = 70 + rocketLevel * 10;
+            this.hitTargets = new Set();
+        } else if (type === 'boss_bomb') {
+            this.state = 'FALLING'; // 'FALLING', 'EXPLODING'
+            this.explosionTimer = 0;
+            this.maxExplosionTime = 30;
+            this.explosionRadius = 85;
             this.hitTargets = new Set();
         }
     }
@@ -1286,6 +1365,57 @@ class Bullet {
                 ctx.fillRect(-this.width / 2 - 4, this.height / 2 - 6, 4, 6);
                 ctx.fillRect(this.width / 2, this.height / 2 - 6, 4, 6);
             }
+        } else if (this.type === 'boss_corner') {
+            ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+            ctx.shadowBlur = 10;
+            ctx.shadowColor = '#00f0ff';
+            ctx.fillStyle = '#00f0ff';
+            ctx.beginPath();
+            ctx.arc(0, 0, this.width / 2, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.shadowBlur = 0;
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, 0, this.width / 4, 0, Math.PI * 2);
+            ctx.fill();
+        } else if (this.type === 'boss_bomb') {
+            if (this.state === 'EXPLODING') {
+                ctx.beginPath();
+                ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.explosionRadius * (this.explosionTimer / this.maxExplosionTime), 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 69, 0, ${1 - this.explosionTimer / this.maxExplosionTime})`;
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(this.x + this.width / 2, this.y + this.height / 2, (this.explosionRadius * 0.6) * (this.explosionTimer / this.maxExplosionTime), 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 215, 0, ${0.8 * (1 - this.explosionTimer / this.maxExplosionTime)})`;
+                ctx.fill();
+            } else {
+                ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+                
+                // Bomb body
+                ctx.fillStyle = '#333333';
+                ctx.beginPath();
+                ctx.arc(0, 0, this.width / 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Blinking red warning indicator
+                ctx.fillStyle = (Math.floor(Date.now() / 150) % 2 === 0) ? '#ff003c' : '#000000';
+                ctx.beginPath();
+                ctx.arc(0, 0, 3, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Fuse cap/spark
+                ctx.fillStyle = '#7f8c8d';
+                ctx.fillRect(-2, -this.height / 2 - 2, 4, 3);
+                
+                ctx.strokeStyle = '#f39c12';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(0, -this.height / 2 - 2);
+                ctx.lineTo(2 + Math.random() * 3, -this.height / 2 - 8);
+                ctx.stroke();
+            }
         } else {
             ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
             if (this.ownerId === 1) {
@@ -1366,6 +1496,23 @@ class Bullet {
                     this.state = 'EXPLODING';
                     this.speedY = 0;
                     this.explodedAtBoundary = true;
+                }
+            } else if (this.state === 'EXPLODING') {
+                this.explosionTimer++;
+                if (this.explosionTimer >= this.maxExplosionTime) {
+                    this.life = 0;
+                }
+            }
+        } else if (this.type === 'boss_corner') {
+            this.x += this.speedX;
+            this.y += this.speedY;
+        } else if (this.type === 'boss_bomb') {
+            if (this.state === 'FALLING') {
+                this.y += this.speedY;
+                if (this.y >= canvas.height - 40) {
+                    this.state = 'EXPLODING';
+                    this.speedY = 0;
+                    sfx.playExplosion();
                 }
             } else if (this.state === 'EXPLODING') {
                 this.explosionTimer++;
@@ -1671,12 +1818,12 @@ function startGame() {
 
     players = [];
     players.push(new Player(1, p1Name, canvas.width * 0.2, canvas.height - 40, '#bde0fe', { 
-        left: 'KeyA', right: 'KeyD', shoot: 'KeyW', shield: 'KeyS', shockwave: 'KeyJ'
+        left: 'KeyA', right: 'KeyD', shoot: 'KeyW', shield: 'KeyS', shockwave: 'KeyJ', drone: 'KeyX'
     }));
     
     if (playerMode >= 2) {
         players.push(new Player(2, p2Name, canvas.width * 0.4, canvas.height - 40, '#ffafcc', { 
-            left: 'ArrowLeft', right: 'ArrowRight', shoot: 'ArrowUp', shield: 'ArrowDown', shockwave: 'Slash'
+            left: 'ArrowLeft', right: 'ArrowRight', shoot: 'ArrowUp', shield: 'ArrowDown', shockwave: 'Slash', drone: 'Period'
         }));
     }
 
@@ -1916,7 +2063,7 @@ function gameLoop() {
                 if (b.type === 'sword_swing') {
                     if (!b.hitTargets.has(boss)) {
                         b.hitTargets.add(boss);
-                        boss.hp -= (1 + (player.upgrades.sword_swing || 0)) * 2; // Sword swing scales and deals extra damage to boss
+                        boss.hp -= 2; // Sword swing deals exactly 2 damage
                         sfx.playHitSFX();
                     }
                 } else {
@@ -1944,7 +2091,7 @@ function gameLoop() {
                 }
 
                 // Damage invader
-                inv.hp -= (b.type === 'sword_swing' ? (1 + (player.upgrades.sword_swing || 0)) : 1);
+                inv.hp -= (b.type === 'sword_swing' ? 2 : 1);
                 sfx.playHitSFX();
 
                 if (inv.hp <= 0) {
@@ -2022,7 +2169,10 @@ function gameLoop() {
         invaders = invaders.filter(inv => !invadersToRemove.has(inv));
     }
 
-    invaderBullets = invaderBullets.filter(b => b.y < canvas.height || (b.type === 'axe' && !b.finished));
+    invaderBullets = invaderBullets.filter(b => {
+        if (b.type === 'boss_bomb') return b.life > 0;
+        return b.y < canvas.height || (b.type === 'axe' && !b.finished);
+    });
     const invaderBulletsToRemove = new Set();
     invaderBullets.forEach((b) => {
         b.update();
@@ -2039,6 +2189,14 @@ function gameLoop() {
                             sfx.playExplosion();
                             createFirework(b.x + b.width / 2, b.y + b.height / 2);
                         }
+                    } else if (b.type === 'boss_bomb') {
+                        if (b.state === 'FALLING') {
+                            b.state = 'EXPLODING';
+                            b.speedY = 0;
+                            sfx.playExplosion();
+                            damagePlayer(p);
+                            b.hitTargets.add(p);
+                        }
                     } else {
                         damagePlayer(p);
                         invaderBulletsToRemove.add(b);
@@ -2046,6 +2204,19 @@ function gameLoop() {
                 }
             }
         });
+
+        // AOE Explosion damage check for boss_bomb against players
+        if (b.type === 'boss_bomb' && b.state === 'EXPLODING') {
+            players.forEach(p => {
+                if (p.alive && p.invincible <= 0 && !b.hitTargets.has(p)) {
+                    const dist = Math.hypot((b.x + b.width / 2) - (p.x + p.width / 2), (b.y + b.height / 2) - (p.y + p.height / 2));
+                    if (dist < b.explosionRadius) {
+                        damagePlayer(p);
+                        b.hitTargets.add(p);
+                    }
+                }
+            });
+        }
 
         // Check collision with drones
         drones.forEach(d => {
@@ -2058,6 +2229,13 @@ function gameLoop() {
                             sfx.playExplosion();
                             createFirework(b.x + b.width / 2, b.y + b.height / 2);
                         }
+                    } else if (b.type === 'boss_bomb') {
+                        if (b.state === 'FALLING') {
+                            b.state = 'EXPLODING';
+                            b.speedY = 0;
+                            sfx.playExplosion();
+                            d.alive = false;
+                        }
                     } else {
                         d.alive = false;
                         sfx.playExplosion();
@@ -2067,6 +2245,20 @@ function gameLoop() {
                 }
             }
         });
+
+        // AOE Explosion damage check for boss_bomb against drones
+        if (b.type === 'boss_bomb' && b.state === 'EXPLODING') {
+            drones.forEach(d => {
+                if (d.alive) {
+                    const dist = Math.hypot((b.x + b.width / 2) - (d.x + d.width / 2), (b.y + b.height / 2) - (d.y + d.height / 2));
+                    if (dist < b.explosionRadius) {
+                        d.alive = false;
+                        sfx.playExplosion();
+                        createFirework(d.x + d.width / 2, d.y + d.height / 2);
+                    }
+                }
+            });
+        }
     });
     if (invaderBulletsToRemove.size > 0) {
         invaderBullets = invaderBullets.filter(b => !invaderBulletsToRemove.has(b));
@@ -2707,7 +2899,7 @@ const LOCALIZATION = {
         card_glass_name: "GLASS CANNON",
         card_glass_desc: "INSTANT SHOOT",
         upgrade_drone_title: "HACKED DRONE",
-        upgrade_drone_desc: "Press X to spawn helper drones",
+        upgrade_drone_desc: "Press X (P1) / . (P2) to spawn helper drones",
         keep_drones_label: "DRONES LOCKED",
         upgrade_sword_swing_title: "SWORD SWING",
         upgrade_sword_swing_desc: "Press I to throw a returning spinning sword",
@@ -2805,7 +2997,7 @@ const LOCALIZATION = {
         card_glass_name: "CAÑÓN CRISTAL",
         card_glass_desc: "DISPARO INSTANTÁNEO",
         upgrade_drone_title: "DRON HACKEADO",
-        upgrade_drone_desc: "Presiona X para lanzar drones ayudantes",
+        upgrade_drone_desc: "Presiona X (P1) / . (P2) para lanzar drones ayudantes",
         keep_drones_label: "DRONES BLOQUEADOS",
         upgrade_sword_swing_title: "ESPADA GIRATORIA",
         upgrade_sword_swing_desc: "Presiona I para lanzar una espada giratoria que regresa",
@@ -2903,7 +3095,7 @@ const LOCALIZATION = {
         card_glass_name: "CANON DE VERRE",
         card_glass_desc: "TIR INSTANTANÉ",
         upgrade_drone_title: "DRÔNE PIRATÉ",
-        upgrade_drone_desc: "Appuyez sur X pour lancer des drônes",
+        upgrade_drone_desc: "Appuyez sur X (P1) / . (P2) pour lancer des drônes",
         keep_drones_label: "DRÔNES RETENUS",
         upgrade_sword_swing_title: "COUP D'ÉPÉE",
         upgrade_sword_swing_desc: "Appuyez sur I pour lancer une épée tournante qui revient",
@@ -3001,7 +3193,7 @@ const LOCALIZATION = {
         card_glass_name: "GLASKANONE",
         card_glass_desc: "SOFORTIGES SCHIESSEN",
         upgrade_drone_title: "GEHACKTE DROHNE",
-        upgrade_drone_desc: "Drücke X um Helferdrohnen zu rufen",
+        upgrade_drone_desc: "Drücke X (P1) / . (P2) um Helferdrohnen zu rufen",
         keep_drones_label: "DROHNEN GESICHERT",
         upgrade_sword_swing_title: "SCHWERTSCHWUNG",
         upgrade_sword_swing_desc: "Drücke I, um ein zurückkehrendes, rotierendes Schwert zu werfen",
@@ -3099,7 +3291,7 @@ const LOCALIZATION = {
         card_glass_name: "ガラスの砲身",
         card_glass_desc: "即時射撃",
         upgrade_drone_title: "ハッキングドローン",
-        upgrade_drone_desc: "Xキーで赤いドローンを召喚",
+        upgrade_drone_desc: "Xキー(P1) / ．キー(P2)でドローンを召喚",
         keep_drones_label: "ドローン固定",
         upgrade_sword_swing_title: "ソードスイング",
         upgrade_sword_swing_desc: "Iキーで戻ってくる回転する剣を投げる",
