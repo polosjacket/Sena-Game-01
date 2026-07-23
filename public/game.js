@@ -295,6 +295,9 @@ let keepDrones = false;
 let hWasDown = false;
 let level = 1;
 let swordSwingShown = false;
+let bombOmbShownCountLvl1to10 = 0;
+let bombOmbShownCountLvl30to40 = 0;
+let bombOmbShownLevels = new Set();
 let wasPausedBeforeSettings = false;
 let animationId;
 let currentUpgradingPlayer = 0;
@@ -1389,6 +1392,7 @@ class Bullet {
             this.maxExplosionTime = 30;
             this.explosionRadius = 80 + bombOmbLevel * 10;
             this.hitTargets = new Set();
+        }
     }
 
     draw() {
@@ -2046,6 +2050,9 @@ function startGame() {
     drones = [];
     level = 1;
     swordSwingShown = false;
+    bombOmbShownCountLvl1to10 = 0;
+    bombOmbShownCountLvl30to40 = 0;
+    bombOmbShownLevels.clear();
     initInvaders();
     updateLivesUI();
 
@@ -2252,6 +2259,8 @@ function gameLoop() {
                     }
                 });
             }
+            return;
+        }
         // Handle bomb_omb special collision and explosion check
         if (b.type === 'bomb_omb') {
             let shouldExplode = false;
@@ -2593,17 +2602,57 @@ function showUpgradeScreen() {
 
     // Shuffle and pick 2
     let selected = [];
+    let forceBombOmb = false;
+    
+    // Check if we need to force bomb_omb in level range 1-10
+    if (level >= 1 && level <= 10 && availableUpgrades.includes('bomb_omb')) {
+        const remainingOpportunities = 10 - level + 1;
+        const needed = 2 - bombOmbShownCountLvl1to10;
+        if (needed > 0 && (remainingOpportunities <= needed || Math.random() < 0.35)) {
+            forceBombOmb = true;
+        }
+    }
+    // Check if we need to force bomb_omb in level range 30-40
+    else if (level >= 30 && level <= 40 && availableUpgrades.includes('bomb_omb')) {
+        const remainingOpportunities = 40 - level + 1;
+        const needed = 2 - bombOmbShownCountLvl30to40;
+        if (needed > 0 && (remainingOpportunities <= needed || Math.random() < 0.35)) {
+            forceBombOmb = true;
+        }
+    }
+
     if (level === 5 && !swordSwingShown && availableUpgrades.includes('sword_swing')) {
-        const remaining = availableUpgrades.filter(type => type !== 'sword_swing');
-        const shuffled = remaining.sort(() => 0.5 - Math.random());
-        selected = ['sword_swing'].concat(shuffled.slice(0, 1));
+        if (forceBombOmb) {
+            selected = ['sword_swing', 'bomb_omb'];
+        } else {
+            const remaining = availableUpgrades.filter(type => type !== 'sword_swing');
+            const shuffled = remaining.sort(() => 0.5 - Math.random());
+            selected = ['sword_swing'].concat(shuffled.slice(0, 1));
+        }
     } else {
-        const shuffled = availableUpgrades.sort(() => 0.5 - Math.random());
-        selected = shuffled.slice(0, 2);
+        if (forceBombOmb) {
+            const remaining = availableUpgrades.filter(type => type !== 'bomb_omb');
+            const shuffled = remaining.sort(() => 0.5 - Math.random());
+            selected = ['bomb_omb'].concat(shuffled.slice(0, 1));
+        } else {
+            const shuffled = availableUpgrades.sort(() => 0.5 - Math.random());
+            selected = shuffled.slice(0, 2);
+        }
     }
 
     if (selected.includes('sword_swing')) {
         swordSwingShown = true;
+    }
+
+    if (selected.includes('bomb_omb')) {
+        if (!bombOmbShownLevels.has(level)) {
+            bombOmbShownLevels.add(level);
+            if (level >= 1 && level <= 10) {
+                bombOmbShownCountLvl1to10++;
+            } else if (level >= 30 && level <= 40) {
+                bombOmbShownCountLvl30to40++;
+            }
+        }
     }
 
     if (selected.length === 0) {
@@ -2938,6 +2987,9 @@ function initUIListeners() {
             maxLives = 3;
             level = 1;
             swordSwingShown = false;
+            bombOmbShownCountLvl1to10 = 0;
+            bombOmbShownCountLvl30to40 = 0;
+            bombOmbShownLevels.clear();
             document.getElementById('game-over-screen').classList.remove('active');
             document.getElementById('setup-screen').classList.add('active');
             loadScores();
