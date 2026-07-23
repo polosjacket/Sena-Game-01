@@ -388,7 +388,8 @@ class Player {
             shockwave: 0, // Number of shockwaves you can fire
             drone: 0, // Number of helper drones you can spawn
             sword_swing: 0, // Level of sword swing returning spinning sword
-            rocket_boom: 0 // Level of rocket-boom plantable rockets
+            rocket_boom: 0, // Level of rocket-boom plantable rockets
+            bomb_omb: 0 // Level of bomb-omb plantable swinging bombs
         };
 
         this.activeShields = 0;
@@ -402,7 +403,7 @@ class Player {
         this.xWasDown = false;
         this.iWasDown = false;
         this.qWasDown = false;
-
+        this.zWasDown = false;
     }
 
     draw() {
@@ -523,9 +524,10 @@ class Player {
             this.xWasDown = false;
         }
 
-        // Sword Swing logic (Press I)
+        // Sword Swing logic (Press I for P1, M for P2)
         const activeSwordsCount = playerBullets.filter(b => b.type === 'sword_swing' && b.ownerId === this.id).length;
-        if (this.id === 1 && keys['KeyI'] && this.upgrades.sword_swing > 0 && !this.iWasDown && activeSwordsCount < this.upgrades.sword_swing) {
+        const isSwordKey = (this.keys && this.keys.sword_swing) ? keys[this.keys.sword_swing] : false;
+        if (isSwordKey && this.upgrades.sword_swing > 0 && !this.iWasDown && activeSwordsCount < this.upgrades.sword_swing) {
             this.iWasDown = true;
             const swordSpeed = -11; // Initial upward speed
             const sword = new Bullet(
@@ -539,13 +541,14 @@ class Player {
             playerBullets.push(sword);
             sfx.playShootPlayer();
         }
-        if (this.id === 1 && !keys['KeyI']) {
+        if (!isSwordKey) {
             this.iWasDown = false;
         }
 
-        // Rocket-Boom logic (Press Q)
+        // Rocket-Boom logic (Press Q for P1, Comma for P2)
         const activeRocketsCount = playerBullets.filter(b => b.type === 'rocket_boom' && b.ownerId === this.id && b.state !== 'EXPLODING').length;
-        if (this.id === 1 && keys['KeyQ'] && this.upgrades.rocket_boom > 0 && !this.qWasDown) {
+        const isRocketKey = (this.keys && this.keys.rocket_boom) ? keys[this.keys.rocket_boom] : false;
+        if (isRocketKey && this.upgrades.rocket_boom > 0 && !this.qWasDown) {
             this.qWasDown = true;
             if (activeRocketsCount < this.upgrades.rocket_boom) {
                 const rocket = new Bullet(
@@ -560,8 +563,30 @@ class Player {
                 sfx.playShootPlayer();
             }
         }
-        if (this.id === 1 && !keys['KeyQ']) {
+        if (!isRocketKey) {
             this.qWasDown = false;
+        }
+
+        // Bomb-Omb logic (Press Z for P1, X for P2)
+        const activeBombsCount = playerBullets.filter(b => b.type === 'bomb_omb' && b.ownerId === this.id && b.state !== 'EXPLODING').length;
+        const isBombKey = (this.keys && this.keys.bomb_omb) ? keys[this.keys.bomb_omb] : false;
+        if (isBombKey && this.upgrades.bomb_omb > 0 && !this.zWasDown) {
+            this.zWasDown = true;
+            if (activeBombsCount < this.upgrades.bomb_omb) {
+                const bomb = new Bullet(
+                    this.x + this.width / 2 - 12,
+                    this.y - 20,
+                    '#ffeb3b', // Yellow bomb body
+                    0,
+                    this.id,
+                    'bomb_omb'
+                );
+                playerBullets.push(bomb);
+                sfx.playShootPlayer();
+            }
+        }
+        if (!isBombKey) {
+            this.zWasDown = false;
         }
 
         // Shield Logic
@@ -980,6 +1005,7 @@ class Boss {
         this.color = '#58cc02'; // Duolingo Green
 
         this.level = level;
+        this.isShapeBoss = (level >= 110);
         this.attackTimer = 0;
         this.attackState = 'IDLE'; // IDLE, WARNING, SLAM, SIDE, LASER
         this.warningAreas = [];
@@ -1002,67 +1028,148 @@ class Boss {
             ctx.fillRect(this.x + this.width/2 - 20, this.y + this.height, 40, canvas.height);
         }
 
-        // Draw spinning sci-fi geometric octagon
-        const cx = this.x + this.width / 2;
-        const cy = this.y + this.height / 2;
-        const numSides = 8;
-        const r = this.width / 2;
+        if (this.isShapeBoss) {
+            // Draw spinning sci-fi geometric octagon
+            const cx = this.x + this.width / 2;
+            const cy = this.y + this.height / 2;
+            const numSides = 8;
+            const r = this.width / 2;
 
-        ctx.save();
-        
-        // Outer glowing neon octagon
-        ctx.shadowBlur = 15;
-        ctx.shadowColor = '#00f0ff';
-        ctx.strokeStyle = '#00f0ff';
-        ctx.lineWidth = 6;
-        
-        ctx.beginPath();
-        for (let i = 0; i < numSides; i++) {
-            const angle = i * (Math.PI * 2 / numSides) + this.rotation;
-            const px = cx + r * Math.cos(angle);
-            const py = cy + r * Math.sin(angle);
-            if (i === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
-        }
-        ctx.closePath();
-        ctx.stroke();
-        
-        // Inner glowing magenta octagon
-        ctx.shadowColor = '#ff00ff';
-        ctx.strokeStyle = '#ff00ff';
-        ctx.lineWidth = 3;
-        
-        ctx.beginPath();
-        for (let i = 0; i < numSides; i++) {
-            const angle = i * (Math.PI * 2 / numSides) + this.rotation;
-            const px = cx + (r * 0.6) * Math.cos(angle);
-            const py = cy + (r * 0.6) * Math.sin(angle);
-            if (i === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
-        }
-        ctx.closePath();
-        ctx.stroke();
-        
-        // Geometric inner spokes connecting vertices to center core
-        ctx.shadowBlur = 5;
-        ctx.lineWidth = 1.5;
-        ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
-        for (let i = 0; i < numSides; i++) {
-            const angle = i * (Math.PI * 2 / numSides) + this.rotation;
+            ctx.save();
+            
+            // Outer glowing neon octagon
+            ctx.shadowBlur = 15;
+            ctx.shadowColor = '#00f0ff';
+            ctx.strokeStyle = '#00f0ff';
+            ctx.lineWidth = 6;
+            
             ctx.beginPath();
-            ctx.moveTo(cx, cy);
-            ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+            for (let i = 0; i < numSides; i++) {
+                const angle = i * (Math.PI * 2 / numSides) + this.rotation;
+                const px = cx + r * Math.cos(angle);
+                const py = cy + r * Math.sin(angle);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
             ctx.stroke();
+            
+            // Inner glowing magenta octagon
+            ctx.shadowColor = '#ff00ff';
+            ctx.strokeStyle = '#ff00ff';
+            ctx.lineWidth = 3;
+            
+            ctx.beginPath();
+            for (let i = 0; i < numSides; i++) {
+                const angle = i * (Math.PI * 2 / numSides) + this.rotation;
+                const px = cx + (r * 0.6) * Math.cos(angle);
+                const py = cy + (r * 0.6) * Math.sin(angle);
+                if (i === 0) ctx.moveTo(px, py);
+                else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.stroke();
+            
+            // Geometric inner spokes connecting vertices to center core
+            ctx.shadowBlur = 5;
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = 'rgba(0, 240, 255, 0.4)';
+            for (let i = 0; i < numSides; i++) {
+                const angle = i * (Math.PI * 2 / numSides) + this.rotation;
+                ctx.beginPath();
+                ctx.moveTo(cx, cy);
+                ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
+                ctx.stroke();
+            }
+            
+            // Core glowing red/orange energy eye in the center
+            ctx.shadowColor = '#ff3333';
+            ctx.fillStyle = '#ff3333';
+            ctx.beginPath();
+            ctx.arc(cx, cy, 14 + Math.sin(Date.now() * 0.01) * 3, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.restore();
+        } else {
+            // Duolingo Owl Body (Rounded bird type)
+            ctx.fillStyle = this.color;
+            
+            // Draw main body (rounded rectangle)
+            ctx.beginPath();
+            const radius = 40;
+            ctx.roundRect(this.x, this.y, this.width, this.height, radius);
+            ctx.fill();
+
+            // Wings
+            ctx.beginPath();
+            ctx.ellipse(this.x - 10, this.y + 60, 20, 40, Math.PI/6, 0, Math.PI * 2);
+            ctx.ellipse(this.x + this.width + 10, this.y + 60, 20, 40, -Math.PI/6, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Ears (Tufts)
+            ctx.beginPath();
+            ctx.moveTo(this.x + 10, this.y);
+            ctx.lineTo(this.x + 30, this.y - 20);
+            ctx.lineTo(this.x + 50, this.y);
+            ctx.fill();
+            
+            ctx.beginPath();
+            ctx.moveTo(this.x + this.width - 10, this.y);
+            ctx.lineTo(this.x + this.width - 30, this.y - 20);
+            ctx.lineTo(this.x + this.width - 50, this.y);
+            ctx.fill();
+            
+            // Beak
+            ctx.fillStyle = '#ffc800';
+            ctx.beginPath();
+            ctx.moveTo(this.x + this.width / 2 - 15, this.y + 55);
+            ctx.lineTo(this.x + this.width / 2 + 15, this.y + 55);
+            ctx.lineTo(this.x + this.width / 2, this.y + 80);
+            ctx.fill();
+
+            // Eyes (Staring menacingly)
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(this.x + 30, this.y + 35, 18, 0, Math.PI * 2);
+            ctx.arc(this.x + this.width - 30, this.y + 35, 18, 0, Math.PI * 2);
+            ctx.fill();
+            
+            ctx.fillStyle = '#000000';
+            // Angry pupils
+            ctx.beginPath();
+            ctx.arc(this.x + 30, this.y + 35, 8, 0, Math.PI * 2);
+            ctx.arc(this.x + this.width - 30, this.y + 35, 8, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Draw Knives (instead of fingers)
+            if (this.level >= 10) {
+                const drawKnife = (kx, ky) => {
+                    // Handle
+                    ctx.fillStyle = '#5c4033'; 
+                    ctx.fillRect(kx + 5, ky + 25, 10, 25);
+                    // Guard
+                    ctx.fillStyle = '#7f8c8d';
+                    ctx.fillRect(kx, ky + 25, 20, 5);
+                    // Blade
+                    ctx.fillStyle = '#ecf0f1';
+                    ctx.beginPath();
+                    ctx.moveTo(kx + 5, ky + 25);
+                    ctx.lineTo(kx + 15, ky + 25);
+                    ctx.lineTo(kx + 10, ky - 10); // Sharp point
+                    ctx.fill();
+                    // Blood detail on blade
+                    ctx.fillStyle = '#e74c3c';
+                    ctx.fillRect(kx + 10, ky, 2, 10);
+                };
+
+                // Left Knives
+                if (this.level >= 10) drawKnife(this.x - 30, this.y + 20);
+                if (this.level >= 30) drawKnife(this.x - 60, this.y + 20);
+                // Right Knives
+                if (this.level >= 20) drawKnife(this.x + this.width + 10, this.y + 20);
+                if (this.level >= 40) drawKnife(this.x + this.width + 40, this.y + 20);
+            }
         }
-        
-        // Core glowing red/orange energy eye in the center
-        ctx.shadowColor = '#ff3333';
-        ctx.fillStyle = '#ff3333';
-        ctx.beginPath();
-        ctx.arc(cx, cy, 14 + Math.sin(Date.now() * 0.01) * 3, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.restore();
 
         
         // Health Bar
@@ -1190,35 +1297,42 @@ class Boss {
             }
         }
 
-        // Update rotation and shoot timer
-        this.rotation += 0.012;
-        this.shootTimer++;
+        if (this.isShapeBoss) {
+            // Update rotation and shoot timer
+            this.rotation += 0.012;
+            this.shootTimer++;
 
-        const cx = this.x + this.width / 2;
-        const cy = this.y + this.height / 2;
-        const r = this.width / 2;
+            const cx = this.x + this.width / 2;
+            const cy = this.y + this.height / 2;
+            const r = this.width / 2;
 
-        // Shoot from corners and throw bombs during IDLE state
-        if (this.attackState === 'IDLE') {
-            // Firing bullets from the 8 corners of the shape
-            if (this.shootTimer % 90 === 0) {
-                for (let i = 0; i < 8; i++) {
-                    const angle = i * (Math.PI * 2 / 8) + this.rotation;
-                    const bx = cx + r * Math.cos(angle);
-                    const by = cy + r * Math.sin(angle);
-                    const bullet = new Bullet(bx, by, '#00f0ff', 3.5, null, 'boss_corner');
-                    bullet.speedX = Math.cos(angle) * 3.5;
-                    bullet.speedY = Math.sin(angle) * 3.5;
-                    invaderBullets.push(bullet);
+            // Shoot from corners and throw bombs during IDLE state
+            if (this.attackState === 'IDLE') {
+                // Firing bullets from the 8 corners of the shape
+                if (this.shootTimer % 90 === 0) {
+                    for (let i = 0; i < 8; i++) {
+                        const angle = i * (Math.PI * 2 / 8) + this.rotation;
+                        const bx = cx + r * Math.cos(angle);
+                        const by = cy + r * Math.sin(angle);
+                        const bullet = new Bullet(bx, by, '#00f0ff', 3.5, null, 'boss_corner');
+                        bullet.speedX = Math.cos(angle) * 3.5;
+                        bullet.speedY = Math.sin(angle) * 3.5;
+                        invaderBullets.push(bullet);
+                    }
+                    sfx.playShootPlayer();
                 }
-                sfx.playShootPlayer();
-            }
 
-            // Throwing a bomb that falls to the ground and explodes
-            if (this.shootTimer % 150 === 0) {
-                const bomb = new Bullet(cx - 10, cy, '#ff5500', 3, null, 'boss_bomb');
-                invaderBullets.push(bomb);
-                sfx.playShootPlayer();
+                // Throwing a bomb that falls to the ground and explodes
+                if (this.shootTimer % 150 === 0) {
+                    const bomb = new Bullet(cx - 10, cy, '#ff5500', 3, null, 'boss_bomb');
+                    invaderBullets.push(bomb);
+                    sfx.playShootPlayer();
+                }
+            }
+        } else {
+            // Owl Boss shooting: standard random shooting
+            if (Math.random() < 0.05) {
+                invaderBullets.push(new Bullet(this.x + Math.random() * this.width, this.y + this.height, '#ff0054', 4));
             }
         }
 
@@ -1235,17 +1349,18 @@ class Bullet {
         this.ownerId = ownerId;
         this.type = type;
 
-        const player = players.find(p => p.id === ownerId) || { upgrades: { sword_swing: 1, rocket_boom: 1 } };
+        const player = players.find(p => p.id === ownerId) || { upgrades: { sword_swing: 1, rocket_boom: 1, bomb_omb: 1 } };
         const swordLevel = player.upgrades.sword_swing || 1;
         const rocketLevel = player.upgrades.rocket_boom || 1;
+        const bombOmbLevel = player.upgrades.bomb_omb || 1;
 
-        this.width = widthOverride !== null ? widthOverride : (type === 'laser' ? 20 : (type === 'sword_swing' ? 24 + swordLevel * 4 : (type === 'rocket_boom' ? 16 : (type === 'boss_bomb' ? 20 : (type === 'boss_corner' ? 8 : 4)))));
-        this.height = type === 'laser' ? canvas.height : (type === 'sword_swing' ? 24 + swordLevel * 4 : (type === 'rocket_boom' ? 24 : (type === 'boss_bomb' ? 20 : (type === 'boss_corner' ? 8 : 10))));
+        this.width = widthOverride !== null ? widthOverride : (type === 'laser' ? 20 : (type === 'sword_swing' ? 24 + swordLevel * 4 : (type === 'rocket_boom' ? 16 : (type === 'boss_bomb' ? 20 : (type === 'boss_corner' ? 8 : (type === 'bomb_omb' ? 24 : 4))))));
+        this.height = type === 'laser' ? canvas.height : (type === 'sword_swing' ? 24 + swordLevel * 4 : (type === 'rocket_boom' ? 24 : (type === 'boss_bomb' ? 20 : (type === 'boss_corner' ? 8 : (type === 'bomb_omb' ? 24 : 10)))));
         this.color = color;
         this.speed = speed;
         this.speedX = 0;
         this.speedY = speed;
-        this.life = type === 'laser' ? 10 : (type === 'sword_swing' ? 400 : (type === 'rocket_boom' ? 1000 : (type === 'boss_bomb' ? 1000 : 100)));
+        this.life = type === 'laser' ? 10 : (type === 'sword_swing' ? 400 : (type === 'rocket_boom' ? 1000 : (type === 'boss_bomb' ? 1000 : (type === 'bomb_omb' ? 1000 : 100))));
 
         if (type === 'sword_swing') {
             this.state = 'FORWARD'; // 'FORWARD' or 'RETURNING'
@@ -1265,7 +1380,15 @@ class Bullet {
             this.maxExplosionTime = 30;
             this.explosionRadius = 85;
             this.hitTargets = new Set();
-        }
+        } else if (type === 'bomb_omb') {
+            this.state = 'THROWN'; // 'THROWN', 'EXPLODING'
+            this.startX = x;
+            this.swayTime = 0;
+            this.speedY = -6; // upward speed
+            this.explosionTimer = 0;
+            this.maxExplosionTime = 30;
+            this.explosionRadius = 80 + bombOmbLevel * 10;
+            this.hitTargets = new Set();
     }
 
     draw() {
@@ -1364,6 +1487,64 @@ class Bullet {
                 ctx.fillStyle = '#ff003c';
                 ctx.fillRect(-this.width / 2 - 4, this.height / 2 - 6, 4, 6);
                 ctx.fillRect(this.width / 2, this.height / 2 - 6, 4, 6);
+            }
+        } else if (this.type === 'bomb_omb') {
+            if (this.state === 'EXPLODING') {
+                ctx.beginPath();
+                ctx.arc(this.x + this.width / 2, this.y + this.height / 2, this.explosionRadius * (this.explosionTimer / this.maxExplosionTime), 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 235, 59, ${1 - this.explosionTimer / this.maxExplosionTime})`; // Yellow-white blast
+                ctx.fill();
+                
+                ctx.beginPath();
+                ctx.arc(this.x + this.width / 2, this.y + this.height / 2, (this.explosionRadius * 0.6) * (this.explosionTimer / this.maxExplosionTime), 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255, 87, 34, ${0.8 * (1 - this.explosionTimer / this.maxExplosionTime)})`; // Orange center
+                ctx.fill();
+            } else {
+                ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
+                
+                // Wind-up key (silver/grey key on the back)
+                ctx.fillStyle = '#bdc3c7';
+                ctx.fillRect(-this.width / 2 - 4, -4, 4, 8); // stem
+                ctx.fillRect(-this.width / 2 - 8, -6, 4, 12); // handle key
+                
+                // Feet (orange oval/rects at the bottom)
+                ctx.fillStyle = '#e67e22';
+                // Left foot
+                ctx.fillRect(-8, this.height / 2 - 2, 6, 4);
+                // Right foot
+                ctx.fillRect(2, this.height / 2 - 2, 6, 4);
+                
+                // Bomb body (Yellow sphere)
+                ctx.fillStyle = '#f1c40f'; // Bright Yellow
+                ctx.beginPath();
+                ctx.arc(0, 0, this.width / 2 - 2, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Eyes (two vertical white lines with black pupils)
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(-6, -6, 4, 8);
+                ctx.fillRect(2, -6, 4, 8);
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(-5, -4, 2, 4);
+                ctx.fillRect(3, -4, 2, 4);
+                
+                // Fuse cap
+                ctx.fillStyle = '#7f8c8d';
+                ctx.fillRect(-2, -this.height / 2 + 1, 4, 3);
+                
+                // Fuse string & spark
+                ctx.strokeStyle = '#2c3e50';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(0, -this.height / 2 + 1);
+                ctx.quadraticCurveTo(4, -this.height / 2 - 4, 2, -this.height / 2 - 8);
+                ctx.stroke();
+                
+                // Spark
+                ctx.fillStyle = (Math.floor(Date.now() / 100) % 2 === 0) ? '#e74c3c' : '#f39c12';
+                ctx.beginPath();
+                ctx.arc(2, -this.height / 2 - 8, 2, 0, Math.PI * 2);
+                ctx.fill();
             }
         } else if (this.type === 'boss_corner') {
             ctx.translate(this.x + this.width / 2, this.y + this.height / 2);
@@ -1492,6 +1673,24 @@ class Bullet {
                 }
             } else if (this.state === 'FIRED') {
                 this.y += this.speedY;
+                if (this.y <= 0) {
+                    this.state = 'EXPLODING';
+                    this.speedY = 0;
+                    this.explodedAtBoundary = true;
+                }
+            } else if (this.state === 'EXPLODING') {
+                this.explosionTimer++;
+                if (this.explosionTimer >= this.maxExplosionTime) {
+                    this.life = 0;
+                }
+            }
+        } else if (this.type === 'bomb_omb') {
+            if (this.state === 'THROWN') {
+                this.y += this.speedY; // Move upward
+                this.swayTime += 0.08; // Increment sway time
+                this.x = this.startX + Math.sin(this.swayTime) * 45; // Sinusoidal sway
+                
+                // Top screen boundary detonation check
                 if (this.y <= 0) {
                     this.state = 'EXPLODING';
                     this.speedY = 0;
@@ -1818,12 +2017,12 @@ function startGame() {
 
     players = [];
     players.push(new Player(1, p1Name, canvas.width * 0.2, canvas.height - 40, '#bde0fe', { 
-        left: 'KeyA', right: 'KeyD', shoot: 'KeyW', shield: 'KeyS', shockwave: 'KeyJ', drone: 'KeyX'
+        left: 'KeyA', right: 'KeyD', shoot: 'KeyW', shield: 'KeyS', shockwave: 'KeyJ', drone: 'KeyX', rocket_boom: 'KeyQ', sword_swing: 'KeyI', bomb_omb: 'KeyZ'
     }));
     
     if (playerMode >= 2) {
         players.push(new Player(2, p2Name, canvas.width * 0.4, canvas.height - 40, '#ffafcc', { 
-            left: 'ArrowLeft', right: 'ArrowRight', shoot: 'ArrowUp', shield: 'ArrowDown', shockwave: 'Slash', drone: 'Period'
+            left: 'ArrowLeft', right: 'ArrowRight', shoot: 'ArrowUp', shield: 'ArrowDown', shockwave: 'Slash', drone: 'Period', rocket_boom: 'Comma', sword_swing: 'KeyM', bomb_omb: 'KeyX'
         }));
     }
 
@@ -1987,6 +2186,7 @@ function gameLoop() {
         if (b.type === 'laser') return b.life > 0;
         if (b.type === 'sword_swing') return b.life > 0;
         if (b.type === 'rocket_boom') return b.life > 0;
+        if (b.type === 'bomb_omb') return b.life > 0;
         return b.y > 0;
     });
     /**
@@ -2052,9 +2252,61 @@ function gameLoop() {
                     }
                 });
             }
+        // Handle bomb_omb special collision and explosion check
+        if (b.type === 'bomb_omb') {
+            let shouldExplode = false;
+            if (b.state === 'THROWN') {
+                if (boss && b.x < boss.x + boss.width && b.x + b.width > boss.x && b.y < boss.y + boss.height && b.y + b.height > boss.y) {
+                    shouldExplode = true;
+                }
+                if (!shouldExplode) {
+                    for (let i = 0; i < invaders.length; i++) {
+                        const inv = invaders[i];
+                        if (invadersToRemove.has(inv)) continue;
+                        if (b.x < inv.x + inv.width && b.x + b.width > inv.x && b.y < inv.y + inv.height && b.y + b.height > inv.y) {
+                            shouldExplode = true;
+                            break;
+                        }
+                    }
+                }
+            } else if (b.state === 'EXPLODING' && b.explodedAtBoundary) {
+                shouldExplode = true;
+                b.explodedAtBoundary = false;
+            }
+
+            if (shouldExplode) {
+                b.state = 'EXPLODING';
+                b.speedY = 0;
+                sfx.playExplosion();
+
+                const dmg = 4 + (player.upgrades.bomb_omb || 1) * 3;
+
+                if (boss) {
+                    const dist = Math.hypot((b.x + b.width / 2) - (boss.x + boss.width / 2), (b.y + b.height / 2) - (boss.y + boss.height / 2));
+                    if (dist < b.explosionRadius) {
+                        boss.hp -= dmg * 2;
+                        if (boss.hp <= 0) {
+                            player.score += 1000;
+                            boss = null;
+                        }
+                    }
+                }
+
+                invaders.forEach(inv => {
+                    if (invadersToRemove.has(inv)) return;
+                    const dist = Math.hypot((b.x + b.width / 2) - (inv.x + inv.width / 2), (b.y + b.height / 2) - (inv.y + inv.height / 2));
+                    if (dist < b.explosionRadius) {
+                        inv.hp -= dmg;
+                        if (inv.hp <= 0) {
+                            invadersToRemove.add(inv);
+                            player.score += 100;
+                        }
+                    }
+                });
+            }
             return;
         }
-        
+
         // Boss collision
         if (boss) {
             if (b.x < boss.x + boss.width && b.x + b.width > boss.x && b.y < boss.y + boss.height && b.y + b.height > boss.y) {
@@ -2323,7 +2575,7 @@ function showUpgradeScreen() {
     const player = players[currentUpgradingPlayer];
     
     // Pick 2 random upgrades that are not at cap
-    const allUpgrades = ['rapid', 'explosion', 'laser', 'freeze', 'speed', 'shield', 'shockwave', 'drone', 'sword_swing', 'rocket_boom'];
+    const allUpgrades = ['rapid', 'explosion', 'laser', 'freeze', 'speed', 'shield', 'shockwave', 'drone', 'sword_swing', 'rocket_boom', 'bomb_omb'];
     const availableUpgrades = allUpgrades.filter(type => {
         if (type === 'rapid') return player.upgrades.rapid < 9;
         if (type === 'explosion') return player.upgrades.explosion < 1.0;
@@ -2335,6 +2587,7 @@ function showUpgradeScreen() {
         if (type === 'drone') return player.upgrades.drone < 10;
         if (type === 'sword_swing') return player.upgrades.sword_swing < 10;
         if (type === 'rocket_boom') return player.upgrades.rocket_boom < 10;
+        if (type === 'bomb_omb') return player.upgrades.bomb_omb < 10;
         return true;
     });
 
@@ -2414,6 +2667,7 @@ function updateUpgradeOverlay() {
         else if (type === 'drone') info = `${lvlWord} ${toRoman(player.upgrades.drone)}/${toRoman(10)}`;
         else if (type === 'sword_swing') info = `${lvlWord} ${toRoman(player.upgrades.sword_swing)}/${toRoman(10)}`;
         else if (type === 'rocket_boom') info = `${lvlWord} ${toRoman(player.upgrades.rocket_boom)}/${toRoman(10)}`;
+        else if (type === 'bomb_omb') info = `${lvlWord} ${toRoman(player.upgrades.bomb_omb)}/${toRoman(10)}`;
         
         const infoEl = card.querySelector('.level-info');
         if (infoEl) infoEl.textContent = info;
@@ -2447,6 +2701,8 @@ function selectUpgrade(type) {
         player.upgrades.sword_swing += 1;
     } else if (type === 'rocket_boom' && player.upgrades.rocket_boom < 10) {
         player.upgrades.rocket_boom += 1;
+    } else if (type === 'bomb_omb' && player.upgrades.bomb_omb < 10) {
+        player.upgrades.bomb_omb += 1;
     }
 
     if (playerMode === 2 && currentUpgradingPlayer === 0) {
@@ -2902,9 +3158,11 @@ const LOCALIZATION = {
         upgrade_drone_desc: "Press X (P1) / . (P2) to spawn helper drones",
         keep_drones_label: "DRONES LOCKED",
         upgrade_sword_swing_title: "SWORD SWING",
-        upgrade_sword_swing_desc: "Press I to throw a returning spinning sword",
+        upgrade_sword_swing_desc: "Press I (P1) / M (P2) to throw a returning spinning sword",
         upgrade_rocket_boom_title: "ROCKET BOOM",
-        upgrade_rocket_boom_desc: "Press Q to plant a delayed rocket"
+        upgrade_rocket_boom_desc: "Press Q (P1) / , (P2) to plant a delayed rocket",
+        upgrade_bomb_omb_title: "BOMB-OMB",
+        upgrade_bomb_omb_desc: "Press Z (P1) / X (P2) to throw a swinging bomb"
     },
     es: {
         title: "¡ZAPEA AL INVASOR!",
@@ -3000,9 +3258,11 @@ const LOCALIZATION = {
         upgrade_drone_desc: "Presiona X (P1) / . (P2) para lanzar drones ayudantes",
         keep_drones_label: "DRONES BLOQUEADOS",
         upgrade_sword_swing_title: "ESPADA GIRATORIA",
-        upgrade_sword_swing_desc: "Presiona I para lanzar una espada giratoria que regresa",
+        upgrade_sword_swing_desc: "Presiona I (P1) / M (P2) para lanzar una espada giratoria que regresa",
         upgrade_rocket_boom_title: "COHETE BUM",
-        upgrade_rocket_boom_desc: "Presiona Q para plantar un cohete retrasado"
+        upgrade_rocket_boom_desc: "Presiona Q (P1) / , (P2) para plantar un cohete retrasado",
+        upgrade_bomb_omb_title: "BOOM-OMB",
+        upgrade_bomb_omb_desc: "Presiona Z (P1) / X (P2) para lanzar una bomba oscilante"
     },
     fr: {
         title: "ZAPPER LA CHOSE !",
@@ -3098,9 +3358,11 @@ const LOCALIZATION = {
         upgrade_drone_desc: "Appuyez sur X (P1) / . (P2) pour lancer des drônes",
         keep_drones_label: "DRÔNES RETENUS",
         upgrade_sword_swing_title: "COUP D'ÉPÉE",
-        upgrade_sword_swing_desc: "Appuyez sur I pour lancer une épée tournante qui revient",
+        upgrade_sword_swing_desc: "Appuyez sur I (P1) / M (P2) pour lancer une épée tournante qui revient",
         upgrade_rocket_boom_title: "BOUM DE ROQUETTE",
-        upgrade_rocket_boom_desc: "Appuyez sur Q pour planter une roquette à retardement"
+        upgrade_rocket_boom_desc: "Appuyez sur Q (P1) / , (P2) pour planter une roquette à retardement",
+        upgrade_bomb_omb_title: "BOMBE-OMB",
+        upgrade_bomb_omb_desc: "Appuyez sur Z (P1) / X (P2) pour lancer une bombe oscillante"
     },
     de: {
         title: "ZAP DAS DING!",
@@ -3196,9 +3458,11 @@ const LOCALIZATION = {
         upgrade_drone_desc: "Drücke X (P1) / . (P2) um Helferdrohnen zu rufen",
         keep_drones_label: "DROHNEN GESICHERT",
         upgrade_sword_swing_title: "SCHWERTSCHWUNG",
-        upgrade_sword_swing_desc: "Drücke I, um ein zurückkehrendes, rotierendes Schwert zu werfen",
+        upgrade_sword_swing_desc: "Drücke I (S1) / M (S2), um ein zurückkehrendes, rotierendes Schwert zu werfen",
         upgrade_rocket_boom_title: "RAKETEN-BOOM",
-        upgrade_rocket_boom_desc: "Drücke Q, um eine verzögerte Rakete zu platzieren"
+        upgrade_rocket_boom_desc: "Drücke Q (S1) / , (S2), um eine verzögerte Rakete zu platzieren",
+        upgrade_bomb_omb_title: "BOMB-OMB",
+        upgrade_bomb_omb_desc: "Drücke Z (S1) / X (S2), um eine schwingende Bombe zu werfen"
     },
     ja: {
         title: "ザップ・ザ・シング！",
@@ -3294,9 +3558,11 @@ const LOCALIZATION = {
         upgrade_drone_desc: "Xキー(P1) / ．キー(P2)でドローンを召喚",
         keep_drones_label: "ドローン固定",
         upgrade_sword_swing_title: "ソードスイング",
-        upgrade_sword_swing_desc: "Iキーで戻ってくる回転する剣を投げる",
+        upgrade_sword_swing_desc: "Iキー(P1) / Mキー(P2)で戻ってくる回転する剣を投げる",
         upgrade_rocket_boom_title: "ロケットブーム",
-        upgrade_rocket_boom_desc: "Qキーで時限ロケットを設置する"
+        upgrade_rocket_boom_desc: "Qキー(P1) / ．キー(P2)で時限ロケットを設置する",
+        upgrade_bomb_omb_title: "ボム兵",
+        upgrade_bomb_omb_desc: "Zキー(P1) / Xキー(P2)で揺れるボム兵を投げる"
     }
 };
 
